@@ -66,11 +66,17 @@ export const MovimientosTemplate = (): JSX.Element => {
   const ingresos = DataDesplegables.movimientos['i'] as Tipo;
   const balance = DataDesplegables.movimientos['b'] as Tipo;
 
-  const tipos = {
+  const tipos: Record<TipoMovimiento, Tipo> = {
     g: gastos,
     i: ingresos,
     b: balance
-  }
+  };
+
+  const tipoActual = tipos[tipo.tipo as TipoMovimiento];
+  const tipoAlterno = tipo.tipo === "g" ? tipos.i : tipos.g;
+  const tipoTercero = tipo.tipo === "b" ? tipos.i : tipos.b;
+  const accionAlterno = tipo.tipo === "g" ? ingresos : gastos;
+  const accionTercero = tipo.tipo === "b" ? ingresos : balance;
 
   const nuevoRegistro = (): void => {
     setOpenRegistro(!openRegistro);
@@ -101,39 +107,43 @@ export const MovimientosTemplate = (): JSX.Element => {
             <div className="filtros-activo">
               <BtnIcono
                 active
-                icono={tipos[tipo.tipo as TipoMovimiento].icono}
-                textcolor={tipos[tipo.tipo as TipoMovimiento].color}
-                bgcolor={tipos[tipo.tipo as TipoMovimiento].bgcolor}
-                text={`${tipos[tipo.tipo as TipoMovimiento].text}s`}
+                icono={tipoActual.icono}
+                textcolor={tipoActual.color}
+                bgcolor={tipoActual.bgcolor}
+                text={`${tipoActual.text}s`}
                 funcion={() => { }}
               />
             </div>
 
             <div className="filtros-secundarios">
               <BtnIcono
-                icono={tipo.tipo !== "g" ? tipos["g"].icono : tipos["i"].icono}
-                textcolor={tipo.tipo !== "g" ? tipos["g"].color : tipos["i"].color}
-                bgcolor={tipo.tipo !== "g" ? tipos["g"].bgcolor : tipos["i"].bgcolor}
-                text={`Ver ${tipo.tipo !== "g" ? tipos["g"].text : tipos["i"].text}s`}
-                funcion={() => { cambiarTipo(tipo.tipo === "g" ? ingresos : gastos) }}
+                icono={tipoAlterno.icono}
+                textcolor={tipoAlterno.color}
+                bgcolor={tipoAlterno.bgcolor}
+                text={`Ver ${tipoAlterno.text}s`}
+                funcion={() => { cambiarTipo(accionAlterno) }}
               />
 
               <BtnIcono
-                icono={tipo.tipo !== "b" ? balance.icono : ingresos.icono}
-                textcolor={tipo.tipo !== "b" ? balance.color : ingresos.color}
-                bgcolor={tipo.tipo !== "b" ? balance.bgcolor : ingresos.bgcolor}
-                text={tipo.tipo !== "b" ? `Ver ${balance.text}s` : `Ver ${ingresos.text}s`}
-                funcion={() => cambiarTipo(tipo.tipo === "b" ? ingresos : balance) }
+                icono={tipoTercero.icono}
+                textcolor={tipoTercero.color}
+                bgcolor={tipoTercero.bgcolor}
+                text={`Ver ${tipoTercero.text}s`}
+                funcion={() => cambiarTipo(accionTercero)}
               />
             </div>
           </DesktopOnly>
 
-          <MobileOnly>
+          <MobileOnly
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <Btndesplegable
-              icono={balance.icono}
-              textcolor={balance.color}
-              bgcolor={balance.bgcolor}
-              text={balance.text}
+              icono={tipoActual.icono}
+              textcolor={tipoActual.color}
+              bgcolor={tipoActual.bgcolor}
+              text={tipoActual.text}
               active
               funcion={openTipo}
             />
