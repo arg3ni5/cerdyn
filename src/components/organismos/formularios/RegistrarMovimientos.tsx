@@ -76,6 +76,7 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
   const [repeticiones, setRepeticiones] = useState<number>(3);
   const [politica, setPolitica] = useState<'este_mes' | 'proximo_mes'>('este_mes');
   const [previewFechas, setPreviewFechas] = useState<string[]>([]);
+  const [recurrenciaColapsada, setRecurrenciaColapsada] = useState<boolean>(false);
 
   const opcionesModoRecurrencia = [
     { icono: "", descripcion: "Cada N días", value: "intervalo" as const },
@@ -331,7 +332,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
 
             {stateTipo && (
               <ListaGenerica
-                top="100%"
+                placement="down"
+                mobilePlacement="down"
                 btnClose={false}
                 scroll="hidden"
                 setState={() => setStateTipo(!stateTipo)}
@@ -398,7 +400,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
               />
               {stateCuenta && (
                 <ListaGenerica
-                  top="100%"
+                  placement="down"
+                  mobilePlacement="up"
                   scroll="auto"
                   setState={() => setStateCuenta(!stateCuenta)}
                   data={cuentas?.map(cuenta => ({
@@ -422,7 +425,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
 
               {stateCategorias && (
                 <ListaGenerica
-                  bottom="100%"
+                  placement="up"
+                  mobilePlacement="up"
                   scroll="auto"
                   setState={() => setStateCategorias(!stateCategorias)}
                   data={categorias?.map(cat => ({
@@ -444,22 +448,36 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                       checked={esRecurrente}
                       onChange={(e) => {
                         setEsRecurrente(e.target.checked);
-                        if (!e.target.checked) setPreviewFechas([]);
+                        if (!e.target.checked) {
+                          setPreviewFechas([]);
+                        }
+                        setRecurrenciaColapsada(false);
                       }}
                       color="warning"
                     />
                   </ContainerFuepagado>
                   {esRecurrente && (
-                    <BtnPreview
-                      type="button"
-                      onClick={() => actualizarPreview()}
-                    >
-                      Ver previsualización
-                    </BtnPreview>
+                    <AccionesRecurrencia>
+                      <BtnPreview
+                        type="button"
+                        onClick={() => {
+                          actualizarPreview();
+                          setRecurrenciaColapsada(true);
+                        }}
+                      >
+                        Previsualizar
+                      </BtnPreview>
+                      <BtnToggleRecurrencia
+                        type="button"
+                        onClick={() => setRecurrenciaColapsada(!recurrenciaColapsada)}
+                      >
+                        {recurrenciaColapsada ? "Mostrar opciones" : "Ocultar opciones"}
+                      </BtnToggleRecurrencia>
+                    </AccionesRecurrencia>
                   )}
                 </FilaRecurrencia>
 
-                {esRecurrente && (
+                {esRecurrente && !recurrenciaColapsada && (
                   <ContainerRecurrenciaOpciones>
                     <ContenedorDropdown>
                       <label>Modo:</label>
@@ -471,7 +489,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                       />
                       {stateModoRecurrencia && (
                         <ListaGenerica
-                          top="100%"
+                          placement="down"
+                          mobilePlacement="down"
                           scroll="hidden"
                           btnClose={false}
                           setState={() => setStateModoRecurrencia(!stateModoRecurrencia)}
@@ -547,7 +566,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                           />
                           {statePoliticaRecurrencia && (
                             <ListaGenerica
-                              top="100%"
+                              placement="down"
+                              mobilePlacement="down"
                               scroll="hidden"
                               btnClose={false}
                               setState={() => setStatePoliticaRecurrencia(!statePoliticaRecurrencia)}
@@ -562,17 +582,18 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                         <MensualHint>La fecha seleccionada arriba no afecta al modo mensual; las fechas se calculan desde el mes de inicio.</MensualHint>
                       </>
                     )}
-                    {previewFechas.length > 0 && (
-                      <ContainerPreview>
-                        <label>Fechas a generar ({previewFechas.length}):</label>
-                        <ul>
-                          {previewFechas.map((f, i) => (
-                            <li key={i}>{f}</li>
-                          ))}
-                        </ul>
-                      </ContainerPreview>
-                    )}
                   </ContainerRecurrenciaOpciones>
+                )}
+
+                {esRecurrente && previewFechas.length > 0 && (
+                  <ContainerPreview>
+                    <label>Fechas a generar ({previewFechas.length}):</label>
+                    <ul>
+                      {previewFechas.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </ContainerPreview>
                 )}
               </ContainerRecurrencia>
             )}
@@ -616,12 +637,16 @@ const Container = styled.div`
   .sub-contenedor {
     width: 500px;
     max-width: 85%;
+    max-height: min(92vh, 780px);
     border-radius: 20px;
     background: ${({ theme }) => theme.bgtotal};
     box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.4);
     padding: 13px 36px 20px 36px;
     z-index: 100;
     color: ${({ theme }) => theme.text};
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     label {
       font-weight: 550;
     }
@@ -642,6 +667,9 @@ const Container = styled.div`
       }
     }
     .formulario {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
       .contentBtnsave {
         padding-top: 10px;
         display: flex;
@@ -652,6 +680,9 @@ const Container = styled.div`
         gap: 20px;
         display: flex;
         flex-direction: column;
+        overflow-y: auto;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
         .colorContainer {
           .colorPickerContent {
             padding-top: 15px;
@@ -662,9 +693,9 @@ const Container = styled.div`
     }
 
     @media (max-width: 500px) {
-      .sub-contenedor {
-        padding: 12px 20px !important;
-      }
+      max-width: 92%;
+      max-height: 92dvh;
+      padding: 12px 20px !important;
 
       input {
         padding: 8px !important;
@@ -815,6 +846,23 @@ const FilaRecurrencia = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+
+  @media (max-width: 500px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const AccionesRecurrencia = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 500px) {
+    width: 100%;
+    justify-content: flex-start;
+  }
 `;
 
 const ContainerRecurrenciaOpciones = styled.div`
@@ -843,6 +891,13 @@ const BtnPreview = styled.button`
   cursor: pointer;
   font-size: 14px;
   align-self: flex-start;
+  white-space: nowrap;
+`;
+
+const BtnToggleRecurrencia = styled(BtnPreview)`
+  background: ${({ theme }) => theme.bgtotal};
+  color: ${({ theme }) => theme.text};
+  border: 1px solid ${({ theme }) => theme.text}44;
 `;
 
 const ContainerPreview = styled.div`
