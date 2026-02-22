@@ -1,4 +1,3 @@
-import styled from "styled-components";
 import {
   Header,
   ContentFiltros,
@@ -14,17 +13,18 @@ import {
   useMovimientosStore,
   RegistrarMovimientos,
   CardTotales,
-  Device,
   CalendarioLineal,
   obtenerTitulo,
   BtnIcono,
   TablaMovimientos,
+  TipoMovimiento,
 } from "../../index";
 import { JSX, useState } from "react";
 import vacioverde from "../../assets/vacioverde.json";
 import vaciorojo from "../../assets/vaciorojo.json";
 import vacioazul from "../../assets/vacioazul.json";
 import { DataDesplegables } from '../../utils/dataEstatica';
+import { Container, ContentFiltro, TipoBar, MobileOnly, DesktopOnly } from './MovimientosTemplate.styles';
 
 
 export const MovimientosTemplate = (): JSX.Element => {
@@ -62,9 +62,15 @@ export const MovimientosTemplate = (): JSX.Element => {
     setStateTipo(false);
   };
 
-  const gastos = DataDesplegables.movimientos['g'];
-  const ingresos = DataDesplegables.movimientos['i'];
-  const balance = DataDesplegables.movimientos['b'];
+  const gastos = DataDesplegables.movimientos['g'] as Tipo;
+  const ingresos = DataDesplegables.movimientos['i'] as Tipo;
+  const balance = DataDesplegables.movimientos['b'] as Tipo;
+
+  const tipos = {
+    g: gastos,
+    i: ingresos,
+    b: balance
+  }
 
   const nuevoRegistro = (): void => {
     setOpenRegistro(!openRegistro);
@@ -89,74 +95,58 @@ export const MovimientosTemplate = (): JSX.Element => {
         <Header stateConfig={{ state: state, setState: openUser }} />
       </header>
 
-      <section className="tipo">
+      <TipoBar className="tipo">
         <ContentFiltros>
-          {(tipo.tipo == "i" || tipo.tipo == "g") &&
-            <BtnIcono
-              active
-              icono={tipo.tipo === "g" ? gastos.icono : ingresos.icono}
-              textcolor={tipo.tipo === "g" ? gastos.color : ingresos.color}
-              bgcolor={tipo.tipo === "g" ? gastos.bgcolor : ingresos.bgcolor}
-              text={tipo.tipo === "g" ? gastos.text : ingresos.text}
-              funcion={() => {}}
-            />
-          }
+          <DesktopOnly>
+            <div className="filtros-activo">
+              <BtnIcono
+                active
+                icono={tipos[tipo.tipo as TipoMovimiento].icono}
+                textcolor={tipos[tipo.tipo as TipoMovimiento].color}
+                bgcolor={tipos[tipo.tipo as TipoMovimiento].bgcolor}
+                text={`${tipos[tipo.tipo as TipoMovimiento].text}s`}
+                funcion={() => { }}
+              />
+            </div>
 
-          {tipo.tipo == "i" &&
-            <BtnIcono
-              icono={gastos.icono}
-              textcolor={gastos.color}
-              bgcolor={gastos.bgcolor}
-              text={gastos.text}
-              funcion={() => cambiarTipo(gastos)}
-            />
-          }
+            <div className="filtros-secundarios">
+              <BtnIcono
+                icono={tipo.tipo !== "g" ? tipos["g"].icono : tipos["i"].icono}
+                textcolor={tipo.tipo !== "g" ? tipos["g"].color : tipos["i"].color}
+                bgcolor={tipo.tipo !== "g" ? tipos["g"].bgcolor : tipos["i"].bgcolor}
+                text={`Ver ${tipo.tipo !== "g" ? tipos["g"].text : tipos["i"].text}s`}
+                funcion={() => { cambiarTipo(tipo.tipo === "g" ? ingresos : gastos) }}
+              />
 
-          {tipo.tipo == "g" &&
-            <BtnIcono
-              icono={ingresos.icono}
-              textcolor={ingresos.color}
-              bgcolor={ingresos.bgcolor}
-              text={ingresos.text}
-              funcion={() => cambiarTipo(ingresos)}
-            />
-          }
+              <BtnIcono
+                icono={tipo.tipo !== "b" ? balance.icono : ingresos.icono}
+                textcolor={tipo.tipo !== "b" ? balance.color : ingresos.color}
+                bgcolor={tipo.tipo !== "b" ? balance.bgcolor : ingresos.bgcolor}
+                text={tipo.tipo !== "b" ? `Ver ${balance.text}s` : `Ver ${ingresos.text}s`}
+                funcion={() => cambiarTipo(tipo.tipo === "b" ? ingresos : balance) }
+              />
+            </div>
+          </DesktopOnly>
 
-          {tipo.tipo !== "b" &&
-            <BtnIcono
+          <MobileOnly>
+            <Btndesplegable
               icono={balance.icono}
               textcolor={balance.color}
               bgcolor={balance.bgcolor}
-              text="Todos"
-              funcion={() => cambiarTipo(balance)}
+              text={balance.text}
+              active
+              funcion={openTipo}
             />
-          }
-
-          {tipo.tipo == "b" &&
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <Btndesplegable
-                icono={balance.icono}
-                textcolor={balance.color}
-                bgcolor={balance.bgcolor}
-                text={balance.text}
-                active
-                funcion={openTipo}
+            {stateTipo && (
+              <ListaMenuDesplegable
+                data={[ingresos, gastos, balance]}
+                top="112%"
+                funcion={(p) => cambiarTipo(p as Tipo)}
               />
-              {stateTipo && (
-                <ListaMenuDesplegable
-                  data={[ingresos, gastos]}
-                  top="112%"
-                  funcion={(p) => cambiarTipo(p as Tipo)}
-                />
-              )}
-
-            </div>
-          }
+            )}
+          </MobileOnly>
         </ContentFiltros>
+        {/* boton agregar */}
         <ContentFiltro>
           <Btnfiltro
             funcion={nuevoRegistro}
@@ -165,7 +155,7 @@ export const MovimientosTemplate = (): JSX.Element => {
             icono={<v.agregar />}
           />
         </ContentFiltro>
-      </section>
+      </TipoBar>
 
       <section className="totales">
         <CardTotales
@@ -236,77 +226,3 @@ export const MovimientosTemplate = (): JSX.Element => {
     </Container>
   );
 }
-interface ContainerProps {
-  $isBalanceActive: boolean;
-}
-
-const Container = styled.div<ContainerProps>`
-  max-width: 100%;
-  overflow-x: hidden;
-  padding: 15px;
-  width: 100%;
-  background: ${({ theme }) => theme.bgtotal};
-  color: ${({ theme }) => theme.text};
-  display: grid;
-  grid-template:
-    "header" 100px
-    "tipo" 100px
-    "totales" auto
-    "calendario" 100px
-    "main" auto
-    "empty" auto;
-
-  .header {
-    grid-area: header;
-    display: flex;
-    align-items: center;
-  }
-  .tipo {
-    grid-area: tipo;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .totales {
-    grid-area: totales;
-    display: grid;
-    align-items: center;
-    grid-template-columns: 1fr;
-    gap: 10px;
-
-    @media ${Device.tablet} {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-  .calendario {
-    grid-area: calendario;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .empty {
-  }
-  .main {
-    grid-area: main;
-    display: flex;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 10px;
-
-    > * {
-      flex: 1 1 100%;
-      max-width: 100%;
-    }
-
-    @media ${Device.tablet} {
-      > * {
-        flex: ${({ $isBalanceActive }) => ($isBalanceActive ? "1 1 calc(50% - 5px)" : "1 1 100%")};
-        max-width: ${({ $isBalanceActive }) => ($isBalanceActive ? "calc(50% - 5px)" : "100%")};
-      }
-    }
-  }
-`;
-const ContentFiltro = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-`;
