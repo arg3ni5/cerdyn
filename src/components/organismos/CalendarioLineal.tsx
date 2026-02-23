@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { MdOutlineNavigateNext, MdArrowBackIos } from "react-icons/md";
-import { JSX, useEffect } from "react";
+import { JSX } from "react";
 import { ConvertirCapitalize, useOperaciones } from "../../index";
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/es';
@@ -48,12 +48,12 @@ const Container = styled.div<ContainerProps>`
     height: 100%;
 
     .subcontainer {
-     
+
       display: flex;
       color: ${(props) => props.$colortext};
       align-items: center;
       justify-content: center;
-     
+
       .contentValue {
         border: 2px solid ${(props) => props.$colortext};
         border-radius: 30px;
