@@ -196,6 +196,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 					.from("movimientos")
 					.select("*")
 					.eq("idcuenta", cuenta.id)
+					.eq("estado", true)
 					.gte("fecha", fechaInicio)
 					.lte("fecha", fechaFin)
 					.order("fecha", { ascending: false });
