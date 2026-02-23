@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Cuenta, Movimiento, useMovimientosStore, useUsuariosStore } from "../../index";
+import { Cuenta, Movimiento, useMovimientosStore, useUsuariosStore, CalendarioLineal } from "../../index";
 import { supabase } from "../../supabase/supabase.config";
 import dayjs from "dayjs";
 import styled from "styled-components";
@@ -183,8 +183,9 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const { usuario } = useUsuariosStore();
 	const [movimientosFiltrados, setMovimientosFiltrados] = useState<Movimiento[]>([]);
 	const now = dayjs();
-	const fechaInicio = now.clone().subtract(1, "month").startOf("month").format("YYYY-MM-DD");
-	const fechaFin = now.clone().endOf("month").format("YYYY-MM-DD");
+	const [date, setDate] = useState(now);
+	const fechaInicio = date.startOf("month").format("YYYY-MM-DD");
+	const fechaFin = date.endOf("month").format("YYYY-MM-DD");
 
 	// Obtener movimientos del mes
 	const { data: movimientos, isLoading } = useQuery<Movimiento[], Error>({
@@ -229,6 +230,11 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 		}
 	};
 
+	// Componente de calendario lineal para navegación de meses
+	const handlePrevMonth = () => setDate(date.subtract(1, 'month'));
+	const handleNextMonth = () => setDate(date.add(1, 'month'));
+	const handleSetToday = () => setDate(dayjs());
+
 	return (
 		<ModalOverlay onClick={handleClose}>
 			<ModalContent onClick={(e) => e.stopPropagation()}>
@@ -241,8 +247,20 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 				</div>
 
 				<div className="modal-body">
-					<div className="info-periodo">
-						Movimientos del período: {dayjs(fechaInicio).format("DD MMM")} - {dayjs(fechaFin).format("DD MMM YYYY")}
+					<div className="info-periodo" style={{ paddingBottom: 0 }}>
+						<div style={{ marginBottom: 8 }}>
+							<div style={{ display: 'flex', justifyContent: 'center' }}>
+								<CalendarioLinealCustom
+									date={date}
+									onPrev={handlePrevMonth}
+									onNext={handleNextMonth}
+									onToday={handleSetToday}
+								/>
+							</div>
+						</div>
+						<div style={{ marginTop: 8 }}>
+							Movimientos del período: {dayjs(fechaInicio).format("DD MMM")} - {dayjs(fechaFin).format("DD MMM YYYY")}
+						</div>
 					</div>
 
 					{isLoading ? (
@@ -294,4 +312,22 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 			</ModalContent>
 		</ModalOverlay>
 	);
+
 };
+
+// Componente CalendarioLinealCustom para reutilizar el estilo de CalendarioLineal pero con props controladas
+import { MdOutlineNavigateNext, MdArrowBackIos } from "react-icons/md";
+import { ConvertirCapitalize } from "../../index";
+const CalendarioLinealCustom = ({ date, onPrev, onNext, onToday }: { date: any, onPrev: () => void, onNext: () => void, onToday: () => void }) => (
+	<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+		<span onClick={onPrev} style={{ cursor: 'pointer', marginLeft: 20 }}>
+			<MdArrowBackIos size={30} />
+		</span>
+		<section style={{ border: '2px solid #667df4', borderRadius: 30, textAlign: 'center', display: 'flex', alignItems: 'center', padding: 10 }}>
+			<p onClick={onToday} style={{ margin: 0, cursor: 'pointer', fontWeight: 500 }}>{ConvertirCapitalize(date.format('MMMM YYYY'))}</p>
+		</section>
+		<span onClick={onNext} style={{ cursor: 'pointer', marginRight: 20 }}>
+			<MdOutlineNavigateNext size={45} />
+		</span>
+	</div>
+);
