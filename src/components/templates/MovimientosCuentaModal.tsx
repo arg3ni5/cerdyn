@@ -75,7 +75,7 @@ const ModalContent = styled.div`
 			border-radius: 8px;
 			margin-bottom: 1.5rem;
 			font-size: 0.9rem;
-			color: ${({ theme }) => theme.textSecondary || 'rgba(0,0,0,0.6)'};
+			color: ${({ theme }) => theme.text};
 		}
 
 		.movimientos-list {
@@ -112,7 +112,7 @@ const ModalContent = styled.div`
 
 					.item-fecha {
 						font-size: 0.85rem;
-						color: ${({ theme }) => theme.textSecondary || 'rgba(0,0,0,0.6)'};
+						color: ${({ theme }) => theme.textSecondary};
 					}
 				}
 
@@ -157,6 +157,9 @@ const ModalContent = styled.div`
 					font-size: 0.85rem;
 					color: ${({ theme }) => theme.textSecondary || 'rgba(0,0,0,0.6)'};
 					margin-bottom: 0.25rem;
+					background: ${({ theme }) => theme.colorSubtitle || 'rgba(0,0,0,0.05)'};
+					padding: 0.25rem 0.5rem;
+					border-radius: 4px;
 				}
 
 				.valor {
