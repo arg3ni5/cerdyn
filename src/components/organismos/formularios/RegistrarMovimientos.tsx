@@ -1,6 +1,5 @@
 import { JSX, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import styled from "styled-components";
 import { Switch } from "@mui/material";
 import {
   useMovimientosStore,
@@ -24,7 +23,11 @@ import {
   DataDesplegables,
   Cuenta,
 } from "../../../index";
+import { ConfigRecurrencia } from "../../../store/MovimientosStore";
+import { showConfirmDialog } from "../../../utils/messages";
 import { useQuery } from "@tanstack/react-query";
+import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, Container, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
+
 interface RegistrarMovimientosProps {
   setState: () => void;
   state: boolean;
@@ -36,6 +39,9 @@ interface FormInputs {
   fecha: string;
   descripcion: string;
   monto: number;
+  intervaloDias: number;
+  diaMes: number;
+  repeticiones: number;
 }
 
 const esPagado = (estado: unknown): boolean => {
@@ -53,13 +59,35 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
   const { selectTipoMovimiento } = useOperaciones();
   const { idusuario } = useUsuariosStore();
   const { categoriaItemSelect, selectCategoria, mostrarCategorias } = useCategoriasStore();
-  const { insertarMovimientos, actualizarMovimientos } = useMovimientosStore();
+  const { insertarMovimientos, actualizarMovimientos, insertarMovimientosRecurrentes, previewRecurrencia } = useMovimientosStore();
 
   const [estado, setEstado] = useState<boolean>(true);
-  //const [ignorar, setIgnorar] = useState<boolean>(false);
   const [stateCategorias, setStateCategorias] = useState<boolean>(false);
   const [stateCuenta, setStateCuenta] = useState<boolean>(false);
   const [stateTipo, setStateTipo] = useState<boolean>(false);
+  const [stateModoRecurrencia, setStateModoRecurrencia] = useState<boolean>(false);
+  const [statePoliticaRecurrencia, setStatePoliticaRecurrencia] = useState<boolean>(false);
+
+  // Recurrence state
+  const [esRecurrente, setEsRecurrente] = useState<boolean>(false);
+  const [modoRecurrencia, setModoRecurrencia] = useState<'intervalo' | 'mensual'>('intervalo');
+  const [intervaloDias, setIntervaloDias] = useState<number>(30);
+  const [diaMes, setDiaMes] = useState<number>(1);
+  const [repeticiones, setRepeticiones] = useState<number>(3);
+  const [politica, setPolitica] = useState<'este_mes' | 'proximo_mes'>('este_mes');
+  const [previewFechas, setPreviewFechas] = useState<string[]>([]);
+  const [recurrenciaColapsada, setRecurrenciaColapsada] = useState<boolean>(false);
+
+  const opcionesModoRecurrencia = [
+    { icono: "", descripcion: "Cada N días", value: "intervalo" as const },
+    { icono: "", descripcion: "Día X de cada mes", value: "mensual" as const },
+  ];
+
+  const opcionesPoliticaRecurrencia = [
+    { icono: "", descripcion: "Este mes", value: "este_mes" as const },
+    { icono: "", descripcion: "Próximo mes", value: "proximo_mes" as const },
+  ];
+
   const tipoInicial = dataSelect?.tipo || (selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
   const [tipoMovimiento, setTipoMovimiento] = useState<Tipo>(
     (tipoInicial ? DataDesplegables.movimientos[tipoInicial] : undefined) || {} as Tipo
@@ -87,15 +115,48 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
     register,
     formState: { errors },
     handleSubmit,
+    watch,
   } = useForm<FormInputs>(
     {
       defaultValues: {
         monto: dataSelect.valor || 0,
         descripcion: dataSelect.descripcion || "",
         fecha: dataSelect.fecha || fechaactual.toISOString().slice(0, 10),
+        intervaloDias: 30,
+        diaMes: 1,
+        repeticiones: 3,
       },
     }
   );
+
+  const fechaActualForm = watch('fecha');
+  const intervaloDiasForm = watch('intervaloDias');
+  const diaMesForm = watch('diaMes');
+  const repeticionesForm = watch('repeticiones');
+
+  useEffect(() => {
+    const value = Number(intervaloDiasForm);
+    if (Number.isNaN(value)) return;
+    const clamped = Math.min(Math.max(value, 1), 365);
+    setIntervaloDias(clamped);
+    setPreviewFechas([]);
+  }, [intervaloDiasForm]);
+
+  useEffect(() => {
+    const value = Number(diaMesForm);
+    if (Number.isNaN(value)) return;
+    const clamped = Math.min(Math.max(value, 1), 31);
+    setDiaMes(clamped);
+    setPreviewFechas([]);
+  }, [diaMesForm]);
+
+  useEffect(() => {
+    const value = Number(repeticionesForm);
+    if (Number.isNaN(value)) return;
+    const clamped = Math.min(Math.max(value, 2), 60);
+    setRepeticiones(clamped);
+    setPreviewFechas([]);
+  }, [repeticionesForm]);
 
   const insertar = async (formData: FormInputs): Promise<void> => {
     if (categoriaItemSelect == null) {
@@ -116,13 +177,51 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
       tipo: tipoMovimiento.tipo,
       valor: parseFloat(formData.monto.toString()),
     } as MovimientoInsert;
+
     try {
-      console.log(baseData);
-      await insertarMovimientos(baseData);
+      if (esRecurrente) {
+        if (repeticiones > 20) {
+          const confirmed = await showConfirmDialog(
+            `Vas a crear ${repeticiones} movimientos recurrentes. ¿Quieres continuar?`,
+            '¿Estás seguro?',
+            `Sí, crear ${repeticiones}`,
+            'Cancelar'
+          );
+          if (!confirmed) return;
+        }
+        const config: ConfigRecurrencia = {
+          modo: modoRecurrencia,
+          repeticiones,
+          intervaloDias: modoRecurrencia === 'intervalo' ? intervaloDias : undefined,
+          diaMes: modoRecurrencia === 'mensual' ? diaMes : undefined,
+          politica: modoRecurrencia === 'mensual' ? politica : undefined,
+        };
+        await insertarMovimientosRecurrentes(baseData, config);
+      } else {
+        console.log(baseData);
+        await insertarMovimientos(baseData);
+      }
       setState();
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const actualizarPreview = (): void => {
+    if (!esRecurrente) {
+      setPreviewFechas([]);
+      return;
+    }
+    const fechaBase = fechaActualForm;
+    const config: ConfigRecurrencia = {
+      modo: modoRecurrencia,
+      repeticiones,
+      intervaloDias: modoRecurrencia === 'intervalo' ? intervaloDias : undefined,
+      diaMes: modoRecurrencia === 'mensual' ? diaMes : undefined,
+      politica: modoRecurrencia === 'mensual' ? politica : undefined,
+    };
+    const fechas = previewRecurrencia({ fecha: fechaBase } as MovimientoInsert, config);
+    setPreviewFechas(fechas);
   };
 
   const actualizar = async (formData: FormInputs): Promise<void> => {
@@ -233,7 +332,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
 
             {stateTipo && (
               <ListaGenerica
-                top="100%"
+                placement="down"
+                mobilePlacement="down"
                 btnClose={false}
                 scroll="hidden"
                 setState={() => setStateTipo(!stateTipo)}
@@ -300,7 +400,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
               />
               {stateCuenta && (
                 <ListaGenerica
-                  top="100%"
+                  placement="down"
+                  mobilePlacement="up"
                   scroll="auto"
                   setState={() => setStateCuenta(!stateCuenta)}
                   data={cuentas?.map(cuenta => ({
@@ -324,7 +425,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
 
               {stateCategorias && (
                 <ListaGenerica
-                  bottom="100%"
+                  placement="up"
+                  mobilePlacement="up"
                   scroll="auto"
                   setState={() => setStateCategorias(!stateCategorias)}
                   data={categorias?.map(cat => ({
@@ -336,6 +438,165 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                 />
               )}
             </ContenedorDropdown>
+
+            {accion === "Nuevo" && (
+              <ContainerRecurrencia>
+                <FilaRecurrencia>
+                  <ContainerFuepagado>
+                    <label>Recurrente:</label>
+                    <Switch
+                      checked={esRecurrente}
+                      onChange={(e) => {
+                        setEsRecurrente(e.target.checked);
+                        if (!e.target.checked) {
+                          setPreviewFechas([]);
+                        }
+                        setRecurrenciaColapsada(false);
+                      }}
+                      color="warning"
+                    />
+                  </ContainerFuepagado>
+                  {esRecurrente && (
+                    <AccionesRecurrencia>
+                      <BtnPreview
+                        type="button"
+                        onClick={() => {
+                          actualizarPreview();
+                          setRecurrenciaColapsada(true);
+                        }}
+                      >
+                        Previsualizar
+                      </BtnPreview>
+                      <BtnToggleRecurrencia
+                        type="button"
+                        onClick={() => setRecurrenciaColapsada(!recurrenciaColapsada)}
+                      >
+                        {recurrenciaColapsada ? "Mostrar opciones" : "Ocultar opciones"}
+                      </BtnToggleRecurrencia>
+                    </AccionesRecurrencia>
+                  )}
+                </FilaRecurrencia>
+
+                {esRecurrente && !recurrenciaColapsada && (
+                  <ContainerRecurrenciaOpciones>
+                    <ContenedorDropdown>
+                      <label>Modo:</label>
+                      <Selector
+                        color="#e14e19"
+                        texto2={modoRecurrencia === 'intervalo' ? 'Cada N días' : 'Día X de cada mes'}
+                        funcion={() => setStateModoRecurrencia(!stateModoRecurrencia)}
+                        state={stateModoRecurrencia}
+                      />
+                      {stateModoRecurrencia && (
+                        <ListaGenerica
+                          placement="down"
+                          mobilePlacement="down"
+                          scroll="hidden"
+                          btnClose={false}
+                          setState={() => setStateModoRecurrencia(!stateModoRecurrencia)}
+                          data={opcionesModoRecurrencia}
+                          funcion={(item) => {
+                            setModoRecurrencia(item.value);
+                            setPreviewFechas([]);
+                          }}
+                        />
+                      )}
+                    </ContenedorDropdown>
+
+                    {modoRecurrencia === 'intervalo' && (
+                      <FilaCamposRecurrencia>
+                        <ContainerMonto>
+                          <label>Cada (días):</label>
+                          <InputText
+                            type="number"
+                            name="intervaloDias"
+                            defaultValue={intervaloDias}
+                            register={register}
+                            errors={errors}
+                            placeholder="1 - 365"
+                          />
+                        </ContainerMonto>
+                        <ContainerMonto>
+                          <label>Repeticiones <small>(mín. 2)</small>:</label>
+                          <InputText
+                            type="number"
+                            name="repeticiones"
+                            defaultValue={repeticiones}
+                            register={register}
+                            errors={errors}
+                            placeholder="2 - 60"
+                          />
+                        </ContainerMonto>
+                      </FilaCamposRecurrencia>
+                    )}
+
+                    {modoRecurrencia === 'mensual' && (
+                      <>
+                        <FilaCamposRecurrencia>
+                          <ContainerMonto>
+                            <label>Día del mes:</label>
+                            <InputText
+                              type="number"
+                              name="diaMes"
+                              defaultValue={diaMes}
+                              register={register}
+                              errors={errors}
+                              placeholder="1 - 31"
+                            />
+                          </ContainerMonto>
+                          <ContainerMonto>
+                            <label>Repeticiones <small>(mín. 2)</small>:</label>
+                            <InputText
+                              type="number"
+                              name="repeticiones"
+                              defaultValue={repeticiones}
+                              register={register}
+                              errors={errors}
+                              placeholder="2 - 60"
+                            />
+                          </ContainerMonto>
+                        </FilaCamposRecurrencia>
+                        <ContenedorDropdown>
+                          <label>Inicio:</label>
+                          <Selector
+                            color="#e14e19"
+                            texto2={politica === 'este_mes' ? 'Este mes' : 'Próximo mes'}
+                            funcion={() => setStatePoliticaRecurrencia(!statePoliticaRecurrencia)}
+                            state={statePoliticaRecurrencia}
+                          />
+                          {statePoliticaRecurrencia && (
+                            <ListaGenerica
+                              placement="down"
+                              mobilePlacement="down"
+                              scroll="hidden"
+                              btnClose={false}
+                              setState={() => setStatePoliticaRecurrencia(!statePoliticaRecurrencia)}
+                              data={opcionesPoliticaRecurrencia}
+                              funcion={(item) => {
+                                setPolitica(item.value);
+                                setPreviewFechas([]);
+                              }}
+                            />
+                          )}
+                        </ContenedorDropdown>
+                        <MensualHint>La fecha seleccionada arriba no afecta al modo mensual; las fechas se calculan desde el mes de inicio.</MensualHint>
+                      </>
+                    )}
+                  </ContainerRecurrenciaOpciones>
+                )}
+
+                {esRecurrente && previewFechas.length > 0 && (
+                  <ContainerPreview>
+                    <label>Fechas a generar ({previewFechas.length}):</label>
+                    <ul>
+                      {previewFechas.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </ContainerPreview>
+                )}
+              </ContainerRecurrencia>
+            )}
           </section>
           <ContenedorBotones>
             <StickyFooter>
@@ -359,205 +620,3 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
     </Container>
   );
 }
-const Container = styled.div`
-  transition: 0.5s;
-  top: 0;
-  left: 0;
-  background-color: rgba(10, 9, 9, 0.5);
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  z-index: 100;
-  color: black;
-
-  .sub-contenedor {
-    width: 500px;
-    max-width: 85%;
-    border-radius: 20px;
-    background: ${({ theme }) => theme.bgtotal};
-    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.4);
-    padding: 13px 36px 20px 36px;
-    z-index: 100;
-    color: ${({ theme }) => theme.text};
-    label {
-      font-weight: 550;
-    }
-    .encabezado {
-      padding-top: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      align-items: center;
-      margin-bottom: 20px;
-      h1 {
-        font-size: 30px;
-        font-weight: 700;
-      }
-      span {
-        font-size: 20px;
-        cursor: pointer;
-      }
-    }
-    .formulario {
-      .contentBtnsave {
-        padding-top: 10px;
-        display: flex;
-        justify-content: center;
-      }
-      section {
-        padding-top: 5px;
-        gap: 20px;
-        display: flex;
-        flex-direction: column;
-        .colorContainer {
-          .colorPickerContent {
-            padding-top: 15px;
-            min-height: 50px;
-          }
-        }
-      }
-    }
-
-    @media (max-width: 500px) {
-      .sub-contenedor {
-        padding: 12px 20px !important;
-      }
-
-      input {
-        padding: 8px !important;
-        font-size: 15px;
-      }
-
-      label {
-        font-size: 14px;
-      }
-    }
-
-  }
-  @keyframes scale-up-bottom {
-    0% {
-      transform: scale(0.5);
-      transform-origin: center bottom;
-    }
-    100% {
-      transform: scale(1);
-      transform-origin: center bottom;
-    }
-  }
-`;
-
-const WrapperPagoFecha = styled.div`
-  display: flex;
-  gap: 20px;
-  width: 100%;
-  flex-wrap: nowrap;
-
-  > div {
-    flex: 1;
-    min-width: 0; // evita que el contenido fuerce wrapping
-  }
-
-  @media (max-width: 500px) {
-    flex-direction: column;
-    flex-wrap: wrap;
-  }
-`;
-const ContainerMonto = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-
-  label {
-    margin-bottom: 5px;
-    font-weight: 550;
-  }
-
-  @media (max-width: 500px) {
-    width: 100%;
-  }
-`;
-
-
-
-const ContainerFuepagado = styled.div`
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex: 1;
-  min-width: 205px;
-`;
-
-const ContenedorDropdown = styled.div`
-  position: relative;
-  width: 100%;
-  flex: 1;
-  display: flex;
-  gap: 10px;
-  flex-direction: row;
-  align-items: center;
-
-  @media (max-width: 500px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  label {
-    white-space: nowrap;
-  }
-
-  > *:not(label) {
-    flex: 1;
-    width: 100%;
-  }
-`;
-
-const ContainerFecha = styled.div`
-  display: flex;
-  flex: 1;
-  gap: 10px;
-  align-items: center;
-  min-width: 205px;
-  input {
-    appearance: none;
-    color: ${({ theme }) => theme.text};
-    font-family: “Helvetica”, arial, sans-serif;
-    font-size: 17px;
-    border: none;
-    background: ${({ theme }) => theme.bgtotal};
-    padding: 4px;
-    display: inline-block;
-    visibility: visible;
-    width: 140px;
-    cursor: pointer;
-    &:focus {
-      border-radius: 10px;
-
-      outline: 0;
-      /* box-shadow: 0 0 5px 0.4rem rgba(252, 252, 252, 0.25); */
-    }
-  }
-`;
-
-const ContenedorBotones = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-`;
-
-const StickyFooter = styled.div`
-  margin-top: 20px;
-  position: sticky;
-  bottom: 0;
-  background: ${({ theme }) => theme.bgtotal};
-  padding: 10px 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  position: relative;
-`;

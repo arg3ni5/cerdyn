@@ -9,9 +9,8 @@ export const Container = styled.div`
   display: grid;
   grid-template:
     "header" 100px
-    "total-summary" 90px
+    "total-summary" auto
     "tipo" 100px
-    "area2" 50px
     "main" auto;
 
   .header {
@@ -70,11 +69,7 @@ export const Container = styled.div`
       margin-left: 1rem;
     }
   }
-  .area2 {
-    grid-area: area2;
-    display: flex;
-    align-items: center;
-  }
+  /* .area2 eliminada para quitar espacio extra */
   .main {
     grid-area: main;
     padding: 1rem;

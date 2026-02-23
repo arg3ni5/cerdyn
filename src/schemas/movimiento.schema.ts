@@ -7,7 +7,7 @@ export const movimientoSchema = z.object({
   tipo: z.string(),
   valor: z.number().nullable(),
   fecha: z.string().nullable(),
-  estado: z.string().nullable(),
+  estado: z.boolean().nullable(),
   idcategoria: z.number().int().positive().nullable(),
   idcuenta: z.number().int().positive().nullable()
 });

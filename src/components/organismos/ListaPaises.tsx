@@ -1,26 +1,34 @@
 import styled from "styled-components";
 import {
-  v,
   InputBuscadorLista,
-  ConvertirCapitalize,
   Device,
   BtnCerrar,
 } from "../../index";
 import iso from "iso-country-currency";
 import { useState } from "react";
-export function ListaPaises({ setSelect, setState }) {
+export function ListaPaises({ setSelect, setState }: { setSelect: (item: any) => void; setState: () => void }) {
+  interface ISOCountry {
+    countryName: string;
+    symbol: string;
+  }
+
   const isocodigos = iso.getAllISOCodes();
-  const [dataresult, setDataresult] = useState([]);
-  function seleccionar(p) {
+  const [dataresult, setDataresult] = useState<ISOCountry[]>([]);
+
+  const seleccionar = (p: ISOCountry) => {
     setSelect(p);
     setState();
   }
-  function buscar(e) {
+  interface SearchEvent {
+    target: {
+      value: string;
+    };
+  }
 
+  const buscar = (e: SearchEvent): void => {
     let filtrado = isocodigos.filter((item) => {
       return item.countryName.toLowerCase().includes(e.target.value.toLowerCase());
     });
-    console.log({isocodigos,filtrado, value: ConvertirCapitalize(e.target.value)});
     setDataresult(filtrado);
   }
   return (
@@ -77,6 +85,6 @@ const ItemContainer = styled.section`
   cursor: pointer;
   transition: 0.3s;
   &:hover {
-    background-color: ${({theme})=>theme.bgtotal};
+    background-color: ${({ theme }) => theme.bgtotal};
   }
 `;

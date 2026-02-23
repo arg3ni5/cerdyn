@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import { Device, v, BtnCerrar } from "../../index";
+import styled, { css } from "styled-components";
+import { Device, BtnCerrar } from "../../index";
 import { JSX } from "react";
 
 interface ListaGenericaProps {
@@ -13,23 +13,52 @@ interface ListaGenericaProps {
   scroll?: string;
   top?: string;
   bottom?: string;
+  placement?: "up" | "down";
+  mobilePlacement?: "up" | "down";
   btnClose?: boolean;
+  mobileFlipUp?: boolean;
 }
 
 interface ContainerProps {
   scroll?: string;
   $bottom?: string;
   $top?: string;
+  $mobileBottom?: string;
+  $mobileTop?: string;
+  $mobileFlipUp?: boolean;
 }
 
-export const ListaGenerica = ({ data, setState, funcion, scroll, bottom, top, btnClose = true }: ListaGenericaProps): JSX.Element => {
+export const ListaGenerica = ({
+  data,
+  setState,
+  funcion,
+  scroll,
+  bottom,
+  top,
+  placement,
+  mobilePlacement,
+  btnClose = true,
+  mobileFlipUp = false,
+}: ListaGenericaProps): JSX.Element => {
+  const topPosition = top ?? (placement === "down" ? "100%" : undefined);
+  const bottomPosition = bottom ?? (placement === "up" ? "100%" : undefined);
+  const mobileTopPosition = mobilePlacement === "down" ? "100%" : undefined;
+  const mobileBottomPosition = mobilePlacement === "up" ? "100%" : undefined;
+
   const seleccionar = (p: any): void => {
     funcion(p);
     setState();
   };
 
   return (
-    <Container scroll={scroll} $bottom={bottom} $top={top}>
+    <Container
+      scroll={scroll}
+      $bottom={bottomPosition}
+      $top={topPosition}
+      $mobileBottom={mobileBottomPosition}
+      $mobileTop={mobileTopPosition}
+      $mobileFlipUp={mobileFlipUp}
+    >
       {btnClose && (
         <section className="contentClose">
           <BtnCerrar funcion={setState} />
@@ -53,13 +82,35 @@ const Container = styled.div<ContainerProps>`
   background: ${({ theme }) => theme.body};
   color: ${({ theme }) => theme.text};
   position: absolute;
+  top: ${(props) => props.$top};
   margin-bottom: 15px;
   bottom: ${(props) => props.$bottom};
   width: 100%;
   padding: 10px;
   border-radius: 10px;
   gap: 10px;
-  z-index: 3;
+  z-index: 20;
+
+  @media (max-width: 500px) {
+    ${({ $mobileTop, $mobileBottom }) =>
+      $mobileTop || $mobileBottom
+        ? css`
+            top: ${$mobileTop || "auto"};
+            bottom: ${$mobileBottom || "auto"};
+            margin-bottom: 0;
+          `
+        : ""}
+
+    ${({ $top, $bottom, $mobileFlipUp }) =>
+      $mobileFlipUp && $top && !$bottom
+        ? css`
+            top: auto;
+            bottom: calc(100% + 6px);
+            margin-bottom: 0;
+          `
+        : ""}
+  }
+
   @media ${() => Device.tablet} {
     width: 400px;
   }
@@ -71,13 +122,13 @@ const Container = styled.div<ContainerProps>`
   }
   .contentClose > * {
     margin: 0;
-    padding: 2px;
   }
 
 
   .contentItems {
     padding-top: 0;
-    overflow-y: ${(props) => props.scroll};
+    max-height: min(260px, 45vh);
+    overflow-y: ${(props) => props.scroll || "auto"};
   }
 `;
 const ItemContainer = styled.div`
