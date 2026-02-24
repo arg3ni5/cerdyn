@@ -1,19 +1,24 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  base: '/',
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    env: {
-      VITE_APP_SUPABASE_URL: 'https://test.supabase.co',
-      VITE_APP_SUPABASE_ANON_KEY: 'test-anon-key',
-      VITE_APP_ENV: 'test',
-      VITE_SESSION_TIMEOUT: '3600000',
-    },
-  },
+// Transformamos el export en una función para acceder al 'mode'
+export default defineConfig(({ mode }) => {
+  // Carga las variables del archivo .env y del sistema (GitHub Actions)
+  // eslint-disable-next-line no-undef
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
+    // Si la variable VITE_DEPLOY_TARGET es 'gh-pages', usa el subdirectorio.
+    // De lo contrario (Firebase o Local), usa la raíz '/'.
+    base: env.VITE_DEPLOY_TARGET === 'gh-pages' ? '/cerdyn/' : '/',
+
+    plugins: [
+      react(),
+    ],
+
+    // Opcional: Esto ayuda a evitar errores de caché en algunos navegadores
+    server: {
+      historyApiFallback: true,
+    }
+  }
 })

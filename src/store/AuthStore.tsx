@@ -21,15 +21,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   signInWithGoogle: async () => {
     try {
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}auth/callback`;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
+        options: { redirectTo },
       });
 
-      if (error) {
-        logger.error('Error durante autenticación con Google', { error: error.message });
-        showErrorMessage('Ocurrió un error durante la autenticación. Por favor, intenta nuevamente.');
-        throw new Error("Ocurrió un error durante la autenticación");
-      }
+      if (error) throw error;
 
       if (!data) {
         logger.error('No se recibieron datos de autenticación');
@@ -41,10 +39,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       logger.info('Autenticación con Google exitosa', { provider: data.provider });
 
       // Return provider and url if available
-      return {
-        provider: data.provider,
-        url: data.url || ''
-      };
+      return { provider: data.provider, url: data.url || "" };
     } catch (error) {
       logger.error('Error inesperado durante signInWithGoogle', { error });
       showErrorMessage('Error inesperado durante la autenticación.');

@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ prod ]
+    branches: [ github-pages ]
 
 permissions:
   contents: read
@@ -14,15 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm install
-        
+
       - name: Build with GitHub Target
         run: npm run build
         env:
@@ -33,7 +33,7 @@ jobs:
           VITE_APP_SUPABASE_ANON_KEY: ${{ secrets.VITE_APP_SUPABASE_ANON_KEY }}
           VITE_APP_ENV: production
           VITE_SESSION_TIMEOUT: 86400000
-          
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

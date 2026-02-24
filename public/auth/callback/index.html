@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      var base = "/cerdyn/";
+      // PKCE uses ?code=..., so preserve location.search
+      window.location.replace(base + "#/auth/callback" + window.location.search + window.location.hash);
+    </script>
+  </head>
+  <body>Redirecting...</body>
+</html>

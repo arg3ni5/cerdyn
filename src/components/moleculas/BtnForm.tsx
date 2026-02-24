@@ -31,7 +31,7 @@ export const BtnForm: React.FC<BtnFormProps> = ({
     e.preventDefault(); // evita que se dispare el submit por accidente
 
     if (url) {
-      navigate(url);
+      navigate(url, { replace: true });
     } else if (funcion) {
       funcion();
     }

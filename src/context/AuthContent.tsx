@@ -25,7 +25,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       async (_event, session) => {
         if (session == null) {
           setUser(null);
-          navigate("/login");
+          navigate("/login", { replace: true });
         } else {
           const metadata = session.user.user_metadata;
 
@@ -56,7 +56,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
           }
 
           if (pathname === "/login") {
-            navigate("/");
+            navigate("/", { replace: true });
             return;
           }
         }

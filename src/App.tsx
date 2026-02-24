@@ -50,7 +50,7 @@ function App(): JSX.Element {
 
     if (error && fetchStatus !== "fetching" && !isPublicRoute) {
       clearUsuario();
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   }, [usuario, error, fetchStatus, isPublicRoute, setUsuario, clearUsuario, navigate]);
 

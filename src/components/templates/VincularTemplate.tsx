@@ -105,8 +105,18 @@ export const VincularTemplate: React.FC = () => {
   return (
     <Container>
       <header className="header">
-        <Header stateConfig={{ state: false, setState: () => {} }} />
+        <Header stateConfig={{ state: false, setState: () => { } }} />
       </header>
+      <section className="area2">
+        {status === "loading" && <p>🔄 Verificando tu sesión...</p>}
+        {status === "no-session" && <p>🔒 Iniciá sesión para vincular tu cuenta.</p>}
+        {status === "success" && <p>✅ ¡Tu cuenta fue vinculada exitosamente!</p>}
+        {status === "already" && <p>⚠️ Esta cuenta de {canal} ya está vinculada.</p>}
+        {status === "error" && <p>❌ Ocurrió un error al vincular tu cuenta.</p>}
+      </section>
+      <section className="area1">
+        {(status === "success" || status === "already") && <IrAConexiones onClick={() =>
+          navigate("/conexiones", { replace: true })}>🔗 Ver mis cuentas vinculadas</IrAConexiones>}
 
       <MainCard>
         <Eyebrow>Vincular Canal</Eyebrow>

@@ -8,20 +8,28 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
+    const run = async () => {
+      // hash example: "#/auth/callback?code=XYZ"
+      const hash = window.location.hash || "";
+      const qs = hash.includes("?") ? hash.split("?")[1] : "";
+      const code = new URLSearchParams(qs).get("code");
 
-      if (!error && data.session) {
-        // Pequeño delay para que el usuario vea el spinner
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
-      } else {
-        navigate("/login");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          navigate("/login", { replace: true });
+          return;
+        }
+        navigate("/", { replace: true });
+        return;
       }
+
+      // fallback
+      const { data } = await supabase.auth.getSession();
+      navigate(data.session ? "/" : "/login", { replace: true });
     };
 
-    handleSession();
+    run();
   }, [navigate]);
 
   return (
