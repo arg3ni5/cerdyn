@@ -76,6 +76,9 @@ const ModalContent = styled.div`
 			margin-bottom: 1.5rem;
 			font-size: 0.9rem;
 			color: ${({ theme }) => theme.text};
+			p {
+				margin: 10px 0;
+			}
 		}
 
 		.movimientos-list {
@@ -143,7 +146,7 @@ const ModalContent = styled.div`
 		}
 
 		.resumen-totales {
-			margin-top: 2rem;
+			margin: 2rem 0;
 			padding-top: 1.5rem;
 			border-top: 1px solid ${({ theme }) => theme.border || 'rgba(0,0,0,0.1)'};
 			display: grid;
@@ -235,7 +238,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const handlePrevMonth = () => setDate(date.subtract(1, 'month'));
 	const handleNextMonth = () => setDate(date.add(1, 'month'));
 	const handleSetToday = () => setDate(dayjs());
-
+const saldo = totalIngresos - totalGastos;
 	return (
 		<ModalOverlay onClick={handleClose}>
 			<ModalContent onClick={(e) => e.stopPropagation()}>
@@ -248,19 +251,39 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 				</div>
 
 				<div className="modal-body">
-					<div className="info-periodo" style={{ paddingBottom: 0 }}>
-						<div style={{ marginBottom: 8 }}>
-							<div style={{ display: 'flex', justifyContent: 'center' }}>
-								<CalendarioLinealCustom
-									date={date}
-									onPrev={handlePrevMonth}
-									onNext={handleNextMonth}
-									onToday={handleSetToday}
-								/>
+
+					<div style={{ marginBottom: 8 }}>
+						<div style={{ display: 'flex', justifyContent: 'center' }}>
+							<CalendarioLinealCustom
+								date={date}
+								onPrev={handlePrevMonth}
+								onNext={handleNextMonth}
+								onToday={handleSetToday}
+							/>
+						</div>
+					</div>
+					<div className="info-periodo">
+						<p>Movimientos del período: {dayjs(fechaInicio).format("DD MMM")} - {dayjs(fechaFin).format("DD MMM YYYY")}</p>
+					</div>
+
+  {/* Saldo actual */}
+  <div className="saldo-actual">
+    <span className="label">Saldo actual</span>
+    <span className="valor">{saldo.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</span>
+  </div>
+
+					<div className="resumen-totales">
+						<div className="total-item">
+							<div className="label">Ingresos</div>
+							<div className="valor ingreso">
+								+{usuario?.moneda} {totalIngresos.toFixed(2)}
 							</div>
 						</div>
-						<div style={{ marginTop: 8 }}>
-							Movimientos del período: {dayjs(fechaInicio).format("DD MMM")} - {dayjs(fechaFin).format("DD MMM YYYY")}
+						<div className="total-item">
+							<div className="label">Gastos</div>
+							<div className="valor gasto">
+								-{usuario?.moneda} {totalGastos.toFixed(2)}
+							</div>
 						</div>
 					</div>
 
@@ -287,21 +310,6 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 										</div>
 									</div>
 								))}
-							</div>
-
-							<div className="resumen-totales">
-								<div className="total-item">
-									<div className="label">Ingresos</div>
-									<div className="valor ingreso">
-										+{usuario?.moneda} {totalIngresos.toFixed(2)}
-									</div>
-								</div>
-								<div className="total-item">
-									<div className="label">Gastos</div>
-									<div className="valor gasto">
-										-{usuario?.moneda} {totalGastos.toFixed(2)}
-									</div>
-								</div>
 							</div>
 						</>
 					) : (
