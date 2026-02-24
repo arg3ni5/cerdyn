@@ -16,6 +16,7 @@ interface OperacionesState {
   selectTipoCuenta: Tipo;
   selectTipoCategoria: Tipo;
   date: Dayjs;
+  colorCategoria: string;
   setToday: () => void;
   addMonth: () => void;
   substractMonth: () => void;
@@ -48,7 +49,8 @@ export const useOperaciones = create<OperacionesState>((set, get) => ({
   setTipoMovimientos: (t: Tipo) => {
     localStorage.setItem("tipoMovimiento", JSON.stringify(t));
     set({
-      selectTipoMovimiento: t
+      selectTipoMovimiento: t,
+      colorCategoria: t.color,
     })
   },
   setTipoCategoria: (p: Tipo) => {
@@ -61,4 +63,5 @@ export const useOperaciones = create<OperacionesState>((set, get) => ({
       selectTipoCuenta: p,
     })
   },
+  colorCategoria: DataDesplegables.categorias["g"].color,
 }));

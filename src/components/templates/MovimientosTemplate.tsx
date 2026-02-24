@@ -1,4 +1,3 @@
-import styled from "styled-components";
 import {
   Header,
   ContentFiltros,
@@ -14,17 +13,18 @@ import {
   useMovimientosStore,
   RegistrarMovimientos,
   CardTotales,
-  Device,
   CalendarioLineal,
   obtenerTitulo,
   BtnIcono,
   TablaMovimientos,
+  TipoMovimiento,
 } from "../../index";
 import { JSX, useState } from "react";
 import vacioverde from "../../assets/vacioverde.json";
 import vaciorojo from "../../assets/vaciorojo.json";
 import vacioazul from "../../assets/vacioazul.json";
 import { DataDesplegables } from '../../utils/dataEstatica';
+import { Container, ContentFiltro, TipoBar, MobileOnly, DesktopOnly } from './MovimientosTemplate.styles';
 
 
 export const MovimientosTemplate = (): JSX.Element => {
@@ -62,17 +62,32 @@ export const MovimientosTemplate = (): JSX.Element => {
     setStateTipo(false);
   };
 
-  const gastos = DataDesplegables.movimientos['g'];
-  const ingresos = DataDesplegables.movimientos['i'];
-  const balance = DataDesplegables.movimientos['b'];
+  const gastos = DataDesplegables.movimientos['g'] as Tipo;
+  const ingresos = DataDesplegables.movimientos['i'] as Tipo;
+  const balance = DataDesplegables.movimientos['b'] as Tipo;
+
+  const tipos: Record<TipoMovimiento, Tipo> = {
+    g: gastos,
+    i: ingresos,
+    b: balance
+  };
+
+  const tipoActual = tipos[tipo.tipo as TipoMovimiento];
+  const tipoAlterno = tipo.tipo === "g" ? tipos.i : tipos.g;
+  const tipoTercero = tipo.tipo === "b" ? tipos.i : tipos.b;
+  const accionAlterno = tipo.tipo === "g" ? ingresos : gastos;
+  const accionTercero = tipo.tipo === "b" ? ingresos : balance;
 
   const nuevoRegistro = (): void => {
     setOpenRegistro(!openRegistro);
     setAccion("Nuevo");
     setDataSelect(undefined);
   };
+
+  const isBalanceActive = tipo.tipo === "b";
+
   return (
-    <Container onClick={cerrarDesplegables}>
+    <Container onClick={cerrarDesplegables} $isBalanceActive={isBalanceActive}>
       {openRegistro && (
         <RegistrarMovimientos
           accion={accion}
@@ -86,74 +101,62 @@ export const MovimientosTemplate = (): JSX.Element => {
         <Header stateConfig={{ state: state, setState: openUser }} />
       </header>
 
-      <section className="tipo">
+      <TipoBar className="tipo">
         <ContentFiltros>
-          {(tipo.tipo == "i" || tipo.tipo == "g") &&
-            <BtnIcono
-              active
-              icono={tipo.tipo === "g" ? gastos.icono : ingresos.icono}
-              textcolor={tipo.tipo === "g" ? gastos.color : ingresos.color}
-              bgcolor={tipo.tipo === "g" ? gastos.bgcolor : ingresos.bgcolor}
-              text={tipo.tipo === "g" ? gastos.text : ingresos.text}
-              funcion={() => {}}
-            />
-          }
-
-          {tipo.tipo == "i" &&
-            <BtnIcono
-              icono={gastos.icono}
-              textcolor={gastos.color}
-              bgcolor={gastos.bgcolor}
-              text={gastos.text}
-              funcion={() => cambiarTipo(gastos)}
-            />
-          }
-
-          {tipo.tipo == "g" &&
-            <BtnIcono
-              icono={ingresos.icono}
-              textcolor={ingresos.color}
-              bgcolor={ingresos.bgcolor}
-              text={ingresos.text}
-              funcion={() => cambiarTipo(ingresos)}
-            />
-          }
-
-          {tipo.tipo !== "b" &&
-            <BtnIcono
-              icono={balance.icono}
-              textcolor={balance.color}
-              bgcolor={balance.bgcolor}
-              text="Todos"
-              funcion={() => cambiarTipo(balance)}
-            />
-          }
-
-          {tipo.tipo == "b" &&
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <Btndesplegable
-                icono={balance.icono}
-                textcolor={balance.color}
-                bgcolor={balance.bgcolor}
-                text={balance.text}
+          <DesktopOnly>
+            <div className="filtros-activo">
+              <BtnIcono
                 active
-                funcion={openTipo}
+                icono={tipoActual.icono}
+                textcolor={tipoActual.color}
+                bgcolor={tipoActual.bgcolor}
+                text={`${tipoActual.text}s`}
+                funcion={() => { }}
               />
-              {stateTipo && (
-                <ListaMenuDesplegable
-                  data={[ingresos, gastos]}
-                  top="112%"
-                  funcion={(p) => cambiarTipo(p as Tipo)}
-                />
-              )}
-
             </div>
-          }
+
+            <div className="filtros-secundarios">
+              <BtnIcono
+                icono={tipoAlterno.icono}
+                textcolor={tipoAlterno.color}
+                bgcolor={tipoAlterno.bgcolor}
+                text={`Ver ${tipoAlterno.text}s`}
+                funcion={() => { cambiarTipo(accionAlterno) }}
+              />
+
+              <BtnIcono
+                icono={tipoTercero.icono}
+                textcolor={tipoTercero.color}
+                bgcolor={tipoTercero.bgcolor}
+                text={`Ver ${tipoTercero.text}s`}
+                funcion={() => cambiarTipo(accionTercero)}
+              />
+            </div>
+          </DesktopOnly>
+
+          <MobileOnly
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <Btndesplegable
+              icono={tipoActual.icono}
+              textcolor={tipoActual.color}
+              bgcolor={tipoActual.bgcolor}
+              text={tipoActual.text}
+              active
+              funcion={openTipo}
+            />
+            {stateTipo && (
+              <ListaMenuDesplegable
+                data={[ingresos, gastos, balance]}
+                top="112%"
+                funcion={(p) => cambiarTipo(p as Tipo)}
+              />
+            )}
+          </MobileOnly>
         </ContentFiltros>
+        {/* boton agregar */}
         <ContentFiltro>
           <Btnfiltro
             funcion={nuevoRegistro}
@@ -162,7 +165,7 @@ export const MovimientosTemplate = (): JSX.Element => {
             icono={<v.agregar />}
           />
         </ContentFiltro>
-      </section>
+      </TipoBar>
 
       <section className="totales">
         <CardTotales
@@ -233,63 +236,3 @@ export const MovimientosTemplate = (): JSX.Element => {
     </Container>
   );
 }
-const Container = styled.div`
-  max-width: 100%;
-  overflow-x: hidden;
-  padding: 15px;
-  width: 100%;
-  background: ${({ theme }) => theme.bgtotal};
-  color: ${({ theme }) => theme.text};
-  display: grid;
-  grid-template:
-    "header" 100px
-    "tipo" 100px
-    "totales" auto
-    "calendario" 100px
-    "main" auto
-    "empty" auto;
-
-  .header {
-    grid-area: header;
-    display: flex;
-    align-items: center;
-  }
-  .tipo {
-    grid-area: tipo;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .totales {
-    grid-area: totales;
-    display: grid;
-    align-items: center;
-    grid-template-columns: 1fr;
-    gap: 10px;
-
-    @media ${Device.tablet} {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-  .calendario {
-    grid-area: calendario;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .empty {
-  }
-  .main {
-    grid-area: main;
-    flex-wrap: wrap;
-
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-`;
-const ContentFiltro = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-`;

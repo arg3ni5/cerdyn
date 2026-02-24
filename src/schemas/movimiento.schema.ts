@@ -7,7 +7,7 @@ export const movimientoSchema = z.object({
   tipo: z.string(),
   valor: z.number().nullable(),
   fecha: z.string().nullable(),
-  estado: z.string().nullable(),
+  estado: z.boolean().nullable(),
   idcategoria: z.number().int().positive().nullable(),
   idcuenta: z.number().int().positive().nullable()
 });
@@ -18,7 +18,6 @@ export const movimientoInsertSchema = z.object({
   tipo: z.enum(tipoEnum).default('i'),
   valor: z.number()
     .positive('El valor debe ser un número positivo')
-    .finite('El valor debe ser un número válido')
     .nullable()
     .optional(),
   fecha: z.string()
@@ -37,7 +36,6 @@ export const movimientoUpdateSchema = z.object({
   tipo: z.enum(tipoEnum).optional(),
   valor: z.number()
     .positive('El valor debe ser un número positivo')
-    .finite('El valor debe ser un número válido')
     .nullable()
     .optional(),
   fecha: z.string()

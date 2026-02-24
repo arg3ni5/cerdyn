@@ -132,7 +132,7 @@ const CarouselContainer = styled.div`
     justify-content: center;
     color: ${(props) => props.theme.bgtotal};
     cursor: pointer;
-    z-index: 20;
+    z-index: 9;
 
     background: ${(props) => props.theme.text};
     border-radius: 50%;
