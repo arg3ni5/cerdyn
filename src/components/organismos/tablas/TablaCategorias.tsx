@@ -173,6 +173,22 @@ const Container = styled.div`
       white-space: normal;
     }
     tr {
+      @media (max-width: ${v.bpbart}) {
+        background: ${({ theme }) => theme.bg};
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(151, 151, 151, 0.2);
+        display: grid;
+        grid-template-areas:
+          "icono desc"
+          "color color"
+          "acciones acciones";
+        grid-template-columns: 50px 1fr;
+        gap: 0.5rem;
+        align-items: center;
+      }
       @media (min-width: ${v.bpbart}) {
         display: table-row;
       }
@@ -216,6 +232,12 @@ const Container = styled.div`
         }
       }
       th[scope="row"] {
+        @media (max-width: ${v.bpbart}) {
+          grid-area: desc;
+          font-size: 1.2rem;
+          font-weight: 600;
+          padding: 0;
+        }
         @media (min-width: ${v.bplisa}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         }
@@ -223,6 +245,7 @@ const Container = styled.div`
           background-color: transparent;
           text-align: center;
           color: ${({ theme }) => theme.text};
+          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         }
       }
       .Colordiv {
@@ -231,25 +254,50 @@ const Container = styled.div`
         justify-content: space-between;
         align-items: center;
         height: 80px;
+        @media (max-width: ${v.bpbart}) {
+          grid-area: color;
+          height: auto;
+          padding: 0.5rem 0;
+          border-top: 1px solid rgba(151, 151, 151, 0.1);
+          border-bottom: 1px solid rgba(151, 151, 151, 0.1);
+        }
         @media (min-width: ${v.bpbart}) {
           justify-content: center;
         }
       }
       td {
         text-align: right;
+        @media (max-width: ${v.bpbart}) {
+          padding: 0;
+          &[data-title="Icono"] {
+            grid-area: icono;
+            font-size: 2rem;
+            text-align: center;
+          }
+          &[data-title="Acciones"] {
+            grid-area: acciones;
+            padding-top: 0.8rem;
+          }
+        }
         @media (min-width: ${v.bpbart}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
           text-align: center;
         }
       }
       td[data-title]:before {
-        content: attr(data-title);
-        float: left;
-        font-size: 0.8em;
-        @media (min-width: ${v.bplisa}) {
+        @media (max-width: ${v.bpbart}) {
+          content: attr(data-title);
+          float: left;
           font-size: 0.9em;
+          font-weight: 500;
+          opacity: 0.7;
         }
         @media (min-width: ${v.bpbart}) {
+          content: none;
+        }
+      }
+      td[data-title="Icono"]:before {
+        @media (max-width: ${v.bpbart}) {
           content: none;
         }
       }
