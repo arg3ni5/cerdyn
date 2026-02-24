@@ -10,6 +10,7 @@ import {
   MostrarCategorias,
 } from "../index";
 import { logger } from "../utils/logger";
+import { queryClient } from "../config/queryClient";
 
 interface CategoriaStore {
   datacategoria: Categoria[] | null;
@@ -54,6 +55,7 @@ export const useCategoriasStore = create<CategoriaStore>((set, get) => ({
       if (parametros) {
         await mostrarCategorias(parametros);
       }
+      queryClient.invalidateQueries({ queryKey: ["mostrar categorias"] });
       logger.debug('Categoría insertada y lista actualizada');
     } catch (error) {
       logger.error('Error al insertar categoría en store', { error, categoria: p });
@@ -68,6 +70,7 @@ export const useCategoriasStore = create<CategoriaStore>((set, get) => ({
       if (parametros) {
         await mostrarCategorias(parametros);
       }
+      queryClient.invalidateQueries({ queryKey: ["mostrar categorias"] });
       logger.debug('Categoría eliminada y lista actualizada', { categoriaId: p.id });
     } catch (error) {
       logger.error('Error al eliminar categoría en store', { error, categoriaId: p.id });
@@ -82,6 +85,7 @@ export const useCategoriasStore = create<CategoriaStore>((set, get) => ({
       if (parametros) {
         await mostrarCategorias(parametros);
       }
+      queryClient.invalidateQueries({ queryKey: ["mostrar categorias"] });
       logger.debug('Todas las categorías eliminadas y lista actualizada', { userId: p.idusuario });
     } catch (error) {
       logger.error('Error al eliminar todas las categorías en store', { error, userId: p.idusuario });
@@ -96,6 +100,7 @@ export const useCategoriasStore = create<CategoriaStore>((set, get) => ({
       if (parametros) {
         await mostrarCategorias(parametros);
       }
+      queryClient.invalidateQueries({ queryKey: ["mostrar categorias"] });
       logger.debug('Categoría editada y lista actualizada', { categoriaId: p.id });
     } catch (error) {
       logger.error('Error al editar categoría en store', { error, categoriaId: p.id });
