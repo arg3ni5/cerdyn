@@ -108,3 +108,17 @@ export async function EliminarCuenta(id: number): Promise<boolean> {
     return false;
   }
 }
+
+export async function GetSaldoCuentaAFecha(p_idcuenta: number, p_fecha: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("fn_obtener_saldo_cuenta_a_fecha", {
+      p_idcuenta,
+      p_fecha,
+    });
+    if (error) throw error;
+    return data || 0;
+  } catch (error) {
+    logger.error("Error al obtener saldo a fecha", { error, p_idcuenta, p_fecha });
+    return 0;
+  }
+}
