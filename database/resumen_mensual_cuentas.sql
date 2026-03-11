@@ -18,8 +18,14 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   v_idusuario BIGINT;
+  v_fecha_inicio DATE;
+  v_fecha_fin DATE;
 BEGIN
   SELECT idusuario INTO v_idusuario FROM public.cuenta WHERE id = p_idcuenta;
+
+  -- Definir rango de fechas para el mes (Sargable para índices)
+  v_fecha_inicio := make_date(p_anio, p_mes, 1);
+  v_fecha_fin := v_fecha_inicio + interval '1 month';
 
   IF v_idusuario IS NOT NULL THEN
     INSERT INTO public.resumen_mensual_cuentas (idcuenta, idusuario, anio, mes, ingresos, gastos, balance)
@@ -33,8 +39,8 @@ BEGIN
       COALESCE(SUM(CASE WHEN tipo = 'i' THEN valor ELSE -valor END), 0)
     FROM public.movimientos
     WHERE idcuenta = p_idcuenta
-      AND EXTRACT(YEAR FROM fecha) = p_anio
-      AND EXTRACT(MONTH FROM fecha) = p_mes
+      AND fecha >= v_fecha_inicio
+      AND fecha < v_fecha_fin
       AND estado = true
     ON CONFLICT (idcuenta, anio, mes)
     DO UPDATE SET
@@ -53,16 +59,23 @@ AS $$
 BEGIN
   -- Si es UPDATE y cambió cuenta o fecha o estado, actualizar el registro antiguo
   IF (TG_OP = 'UPDATE') THEN
-     IF (OLD.idcuenta <> NEW.idcuenta OR OLD.fecha <> NEW.fecha OR OLD.estado <> NEW.estado) THEN
-        PERFORM public.fn_recalcular_mes_cuenta(OLD.idcuenta, EXTRACT(YEAR FROM OLD.fecha)::INT, EXTRACT(MONTH FROM OLD.fecha)::INT);
+     IF (OLD.idcuenta IS DISTINCT FROM NEW.idcuenta OR OLD.fecha IS DISTINCT FROM NEW.fecha OR OLD.estado IS DISTINCT FROM NEW.estado) THEN
+        IF OLD.idcuenta IS NOT NULL AND OLD.fecha IS NOT NULL THEN
+           PERFORM public.fn_recalcular_mes_cuenta(OLD.idcuenta, EXTRACT(YEAR FROM OLD.fecha)::INT, EXTRACT(MONTH FROM OLD.fecha)::INT);
+        END IF;
      END IF;
   END IF;
 
   -- Actualizar el registro nuevo/actual
   IF (TG_OP = 'DELETE') THEN
-     PERFORM public.fn_recalcular_mes_cuenta(OLD.idcuenta, EXTRACT(YEAR FROM OLD.fecha)::INT, EXTRACT(MONTH FROM OLD.fecha)::INT);
+     IF OLD.idcuenta IS NOT NULL AND OLD.fecha IS NOT NULL THEN
+        PERFORM public.fn_recalcular_mes_cuenta(OLD.idcuenta, EXTRACT(YEAR FROM OLD.fecha)::INT, EXTRACT(MONTH FROM OLD.fecha)::INT);
+     END IF;
   ELSE
-     PERFORM public.fn_recalcular_mes_cuenta(NEW.idcuenta, EXTRACT(YEAR FROM NEW.fecha)::INT, EXTRACT(MONTH FROM NEW.fecha)::INT);
+     -- INSERT o UPDATE (NEW)
+     IF NEW.idcuenta IS NOT NULL AND NEW.fecha IS NOT NULL THEN
+        PERFORM public.fn_recalcular_mes_cuenta(NEW.idcuenta, EXTRACT(YEAR FROM NEW.fecha)::INT, EXTRACT(MONTH FROM NEW.fecha)::INT);
+     END IF;
   END IF;
 
   RETURN NULL;
@@ -100,15 +113,17 @@ INSERT INTO public.resumen_mensual_cuentas (idcuenta, idusuario, anio, mes, ingr
 SELECT
   m.idcuenta,
   c.idusuario,
-  EXTRACT(YEAR FROM m.fecha)::INT as anio,
-  EXTRACT(MONTH FROM m.fecha)::INT as mes,
+  EXTRACT(YEAR FROM m.fecha)::INT as anio_val,
+  EXTRACT(MONTH FROM m.fecha)::INT as mes_val,
   SUM(CASE WHEN m.tipo = 'i' THEN m.valor ELSE 0 END) as ingresos,
   SUM(CASE WHEN m.tipo = 'g' THEN m.valor ELSE 0 END) as gastos,
   SUM(CASE WHEN m.tipo = 'i' THEN m.valor ELSE -m.valor END) as balance
 FROM public.movimientos m
 JOIN public.cuenta c ON m.idcuenta = c.id
 WHERE m.estado = true
-GROUP BY m.idcuenta, c.idusuario, anio, mes
+  AND m.fecha IS NOT NULL
+  AND m.idcuenta IS NOT NULL
+GROUP BY m.idcuenta, c.idusuario, EXTRACT(YEAR FROM m.fecha), EXTRACT(MONTH FROM m.fecha)
 ON CONFLICT (idcuenta, anio, mes) DO UPDATE SET
   ingresos = EXCLUDED.ingresos,
   gastos = EXCLUDED.gastos,
