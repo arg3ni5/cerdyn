@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Cuenta, Movimiento, useUsuariosStore, GetSaldoCuentaAFecha } from "../../index";
+import { Cuenta, Movimiento, useUsuariosStore, ObtenerSaldoCuentaAFecha } from "../../index";
 import { supabase } from "../../supabase/supabase.config";
 import dayjs from "dayjs";
 import styled from "styled-components";
@@ -224,7 +224,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 
 	const { data: saldoAnterior, isLoading: isLoadingSaldo } = useQuery({
 		queryKey: ["saldo-anterior", cuenta.id, fechaInicio],
-		queryFn: () => GetSaldoCuentaAFecha(cuenta.id, fechaInicio),
+		queryFn: () => ObtenerSaldoCuentaAFecha(cuenta.id, fechaInicio),
 		enabled: !!cuenta.id,
 	});
 
