@@ -185,6 +185,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      resumen_mensual_cuentas: {
+        Row: {
+          balance: number | null;
+          gastos: number | null;
+          id: number;
+          idcuenta: number | null;
+          idusuario: number | null;
+          ingresos: number | null;
+          mes: number;
+          anio: number;
+        };
+        Insert: {
+          balance?: number | null;
+          gastos?: number | null;
+          id?: number;
+          idcuenta?: number | null;
+          idusuario?: number | null;
+          ingresos?: number | null;
+          mes: number;
+          anio: number;
+        };
+        Update: {
+          balance?: number | null;
+          gastos?: number | null;
+          id?: number;
+          idcuenta?: number | null;
+          idusuario?: number | null;
+          ingresos?: number | null;
+          mes?: number;
+          anio?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "resumen_mensual_cuentas_idcuenta_fkey";
+            columns: ["idcuenta"];
+            isOneToOne: false;
+            referencedRelation: "cuenta";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "resumen_mensual_cuentas_idusuario_fkey";
+            columns: ["idusuario"];
+            isOneToOne: false;
+            referencedRelation: "usuarios";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -272,6 +320,13 @@ export type Database = {
             color: string;
           }[];
         };
+      };
+      fn_obtener_saldo_cuenta_a_fecha: {
+        Args: {
+          p_idcuenta: number;
+          p_fecha: string;
+        };
+        Returns: number;
       };
     };
     Enums: {
