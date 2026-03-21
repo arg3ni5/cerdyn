@@ -115,6 +115,8 @@ export type Database = {
           id: number;
           idcategoria: number | null;
           idcuenta: number | null;
+          idcuenta_origen: number | null;
+          idcuenta_destino: number | null;
           tipo: string;
           valor: number | null;
         };
@@ -125,6 +127,8 @@ export type Database = {
           id?: number;
           idcategoria?: number | null;
           idcuenta?: number | null;
+          idcuenta_origen?: number | null;
+          idcuenta_destino?: number | null;
           tipo: string;
           valor?: number | null;
         };
@@ -135,6 +139,8 @@ export type Database = {
           id?: number;
           idcategoria?: number | null;
           idcuenta?: number | null;
+          idcuenta_origen?: number | null;
+          idcuenta_destino?: number | null;
           tipo?: string;
           valor?: number | null;
         };
@@ -254,6 +260,8 @@ export type Database = {
           cuenta: string;
           categoria: string;
           valorymoneda: string;
+          idcuenta_origen: number | null;
+          idcuenta_destino: number | null;
         }[];
       };
       mmovimientosmesanio_all: {

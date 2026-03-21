@@ -152,6 +152,8 @@ export const convertToMovimiento = (item: MovimientosMesAnio[number]): Movimient
     estado: item.estado,
     idcategoria: null,
     idcuenta: null,
+    idcuenta_origen: item.idcuenta_origen ?? null,
+    idcuenta_destino: item.idcuenta_destino ?? null,
     tipo: ''
   } as unknown as Movimiento;
 };

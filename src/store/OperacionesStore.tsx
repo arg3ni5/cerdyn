@@ -2,7 +2,7 @@ import { create } from "zustand";
 import dayjs, { Dayjs } from 'dayjs';
 import { DataDesplegables } from "../utils/dataEstatica";
 
-export type TipoMovimiento = "g" | "i" | "b";
+export type TipoMovimiento = "g" | "i" | "b" | "t";
 
 export interface Tipo {
   tipo: string;
