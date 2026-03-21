@@ -16,6 +16,7 @@ export const Container = styled.div<ContainerProps>`
   grid-template:
     "header" 100px
     "tipo" 100px
+    "busqueda" auto
     "totales" auto
     "calendario" 100px
     "main" auto
@@ -31,6 +32,18 @@ export const Container = styled.div<ContainerProps>`
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+  .busqueda {
+    grid-area: busqueda;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 0;
+
+    @media ${Device.tablet} {
+      flex-direction: row;
+      align-items: center;
+    }
   }
   .totales {
     grid-area: totales;

@@ -47,8 +47,12 @@ interface MovimientosState {
   totalMesAño: number;
   totalMesAñoPagados: number;
   totalMesAñoPendientes: number;
+  filtroDescripcion: string;
+  filtroCategoria: string;
   parametros: MovimientosMesAnioParams;
+  setFiltros: (descripcion: string, categoria: string) => void;
   mostrarMovimientos: (p: MovimientosMesAnioParams) => Promise<DataMovimientos>;
+  setDatamovimientos: (data: DataMovimientos) => void;
   calcularTotales: (data: DataMovimientos) => void;
   insertarMovimientos: (p: MovimientoInsert) => Promise<void>;
   actualizarMovimientos: (p: MovimientoUpdate) => Promise<void>;
@@ -76,7 +80,13 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
   totalMesAño: 0,
   totalMesAñoPagados: 0,
   totalMesAñoPendientes: 0,
+  filtroDescripcion: "",
+  filtroCategoria: "",
   parametros: {} as MovimientosMesAnioParams,
+
+  setFiltros: (descripcion: string, categoria: string) => {
+    set({ filtroDescripcion: descripcion, filtroCategoria: categoria });
+  },
 
   mostrarMovimientos: async (p: MovimientosMesAnioParams) => {
     try {
@@ -101,18 +111,19 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
 
       const response = { i, g };
 
-      const { calcularTotales } = get();
-      if (response) calcularTotales(response);
-      set({ datamovimientos: { i: i || [], g: g || [] } });
-      logger.debug('Movimientos cargados exitosamente', {
-        ingresos: i?.length || 0,
-        gastos: g?.length || 0
-      });
+      const { setDatamovimientos } = get();
+      setDatamovimientos(response);
       return response;
     } catch (error) {
       logger.error('Error al mostrar movimientos en store', { error, params: p });
       return { i: [], g: [] };
     }
+  },
+
+  setDatamovimientos: (data: DataMovimientos) => {
+    const { calcularTotales } = get();
+    set({ datamovimientos: data });
+    calcularTotales(data);
   },
 
   calcularTotales: (data: DataMovimientos): void => {

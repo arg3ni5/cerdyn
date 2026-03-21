@@ -13,6 +13,12 @@ import {
   useMovimientosStore,
   RegistrarMovimientos,
   CardTotales,
+  InputBuscadorLista,
+  Selector,
+  ListaGenerica,
+  useCategoriasStore,
+  Categoria,
+  DataMovimientos,
   CalendarioLineal,
   obtenerTitulo,
   BtnIcono,
@@ -38,7 +44,13 @@ export const MovimientosTemplate = (): JSX.Element => {
     totalMesAñoPagados,
     totalMesAñoPendientes,
     datamovimientos,
+    filtroDescripcion,
+    filtroCategoria,
+    setFiltros,
   } = useMovimientosStore();
+
+  const { datacategoria } = useCategoriasStore();
+  const [stateListaCategorias, setStateListaCategorias] = useState(false);
 
   const [dataSelect, setDataSelect] = useState<Movimiento | undefined>(undefined);
 
@@ -85,6 +97,59 @@ export const MovimientosTemplate = (): JSX.Element => {
   };
 
   const isBalanceActive = tipo.tipo === "b";
+
+  const filterMovimientos = (data: any[]) => {
+    if (!data) return [];
+    return data.filter(item => {
+      const matchDescripcion = item.descripcion?.toLowerCase().includes(filtroDescripcion.toLowerCase());
+      const matchMonto = item.valor?.toString().includes(filtroDescripcion);
+      const matchCategoria = filtroCategoria === "" || item.categoria === filtroCategoria;
+      return (matchDescripcion || matchMonto) && matchCategoria;
+    });
+  };
+
+  const filteredDatamovimientos: DataMovimientos = {
+    i: filterMovimientos(datamovimientos?.i || []),
+    g: filterMovimientos(datamovimientos?.g || [])
+  };
+
+  const calculateFilteredTotals = (tipoMovimiento: "i" | "g" | "b") => {
+    const esPagadoLocal = (estado: unknown): boolean => {
+      if (typeof estado === "boolean") return estado;
+      if (typeof estado === "number") return estado === 1;
+      if (typeof estado === "string") {
+        const valor = estado.trim().toLowerCase();
+        return valor === "1" || valor === "true";
+      }
+      return false;
+    };
+
+    if (tipoMovimiento === "b") {
+      const ing = filteredDatamovimientos.i;
+      const gas = filteredDatamovimientos.g;
+
+      const tIng = ing.reduce((sum, item) => sum + Number(item.valor), 0);
+      const tGas = gas.reduce((sum, item) => sum + Number(item.valor), 0);
+      const pIng = ing.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pGas = gas.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const penIng = ing.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const penGas = gas.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+
+      return {
+        total: tIng - tGas,
+        pagados: pIng - pGas,
+        pendientes: penIng - penGas
+      };
+    } else {
+      const movs = filteredDatamovimientos[tipoMovimiento as "i" | "g"];
+      const total = movs.reduce((sum, item) => sum + Number(item.valor), 0);
+      const pagados = movs.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pendientes = movs.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      return { total, pagados, pendientes };
+    }
+  };
+
+  const totals = calculateFilteredTotals(tipo.tipo as "i" | "g" | "b");
 
   return (
     <Container onClick={cerrarDesplegables} $isBalanceActive={isBalanceActive}>
@@ -167,21 +232,47 @@ export const MovimientosTemplate = (): JSX.Element => {
         </ContentFiltro>
       </TipoBar>
 
+      <section className="busqueda">
+        <InputBuscadorLista
+          placeholder="Buscar por descripción o monto..."
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiltros(e.target.value, filtroCategoria)}
+        />
+        <div style={{ position: 'relative' }}>
+          <Selector
+            color={tipo.color}
+            texto1="Categoría: "
+            texto2={filtroCategoria || "Todas"}
+            funcion={() => setStateListaCategorias(!stateListaCategorias)}
+            state={stateListaCategorias}
+          />
+          {stateListaCategorias && (
+            <ListaGenerica
+              data={[
+                { icono: "📁", descripcion: "Todas" },
+                ...(datacategoria?.map(c => ({ icono: c.icono, descripcion: c.descripcion })) || [])
+              ]}
+              setState={() => setStateListaCategorias(false)}
+              funcion={(item) => setFiltros(filtroDescripcion, item.descripcion === "Todas" ? "" : item.descripcion)}
+            />
+          )}
+        </div>
+      </section>
+
       <section className="totales">
         <CardTotales
-          total={totalMesAñoPendientes}
+          total={totals.pendientes}
           title={obtenerTitulo(tipo.tipo as "i" | "g" | "b", "pendientes")}
           color={tipo.color}
           icono={<v.flechaarribalarga />}
         />
         <CardTotales
-          total={totalMesAñoPagados}
+          total={totals.pagados}
           title={obtenerTitulo(tipo.tipo as "i" | "g" | "b", "pagados")}
           color={tipo.color}
           icono={<v.flechaabajolarga />}
         />
         <CardTotales
-          total={totalMesAño}
+          total={totals.total}
           title="Total"
           color={tipo.color}
           icono={<v.balance />}
@@ -195,24 +286,24 @@ export const MovimientosTemplate = (): JSX.Element => {
       <section className="main">
 
         {(tipo.tipo == "i" || tipo.tipo == "b")
-          && datamovimientos.i?.length > 0 &&
+          && filteredDatamovimientos.i?.length > 0 &&
           <TablaMovimientos
             titulo={"Ingresos"}
             tipo={ingresos}
             color={v.colorIngresos}
-            data={datamovimientos.i}
+            data={filteredDatamovimientos.i}
             setOpenRegistro={setOpenRegistro}
             setDataSelect={setDataSelect}
             setAccion={setAccion} />
         }
 
         {(tipo.tipo == "g" || tipo.tipo == "b")
-          && datamovimientos.g?.length > 0 &&
+          && filteredDatamovimientos.g?.length > 0 &&
           <TablaMovimientos
             titulo={"Gastos"}
             tipo={gastos}
             color={v.colorGastos}
-            data={datamovimientos.g}
+            data={filteredDatamovimientos.g}
             setOpenRegistro={setOpenRegistro}
             setDataSelect={setDataSelect}
             setAccion={setAccion} />
@@ -221,9 +312,9 @@ export const MovimientosTemplate = (): JSX.Element => {
 
 
       {(
-        (tipo.tipo == "b" && datamovimientos.i?.length == 0 && datamovimientos.g?.length == 0) ||
-        (tipo.tipo == "i" && datamovimientos.i?.length == 0) ||
-        (tipo.tipo == "g" && datamovimientos.g?.length == 0)
+        (tipo.tipo == "b" && filteredDatamovimientos.i?.length == 0 && filteredDatamovimientos.g?.length == 0) ||
+        (tipo.tipo == "i" && filteredDatamovimientos.i?.length == 0) ||
+        (tipo.tipo == "g" && filteredDatamovimientos.g?.length == 0)
       ) && (
           <section className="empty">
             <Lottieanimacion
