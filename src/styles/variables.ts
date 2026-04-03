@@ -48,6 +48,8 @@ export const v = {
   colorbgingresos: `#e6ffe7`,
   colorGastos: `#fe6156`,
   colorbgGastos: `#fbcbc9`,
+  colorTransferencias: `#3b82f6`,
+  colorbgTransferencias: `#dbeafe`,
   colorError: `#F54E41`,
   colorExito: `#9046FF`,
   bpmaggie: `15em`,

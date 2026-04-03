@@ -39,6 +39,7 @@ export interface DataRptMovimientosAñoMes {
 export interface DataMovimientos {
   i: MovimientosMesAnio;
   g: MovimientosMesAnio;
+  t: MovimientosMesAnio;
 }
 interface MovimientosState {
   datamovimientos: DataMovimientos;
@@ -97,6 +98,8 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "i" }) || [] : currentState.datamovimientos.i || [];
       let g = p.tipocategoria === "g" || p.tipocategoria === "b" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "g" }) || [] : currentState.datamovimientos.g || [];
+      let t = p.tipocategoria === "t" || p.tipocategoria === "b" ?
+        await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "t" }) || [] : currentState.datamovimientos.t || [];
 
       // Convertir estado a booleano
       i = i?.map(item => ({
@@ -109,14 +112,19 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
         estado: esPagado(item.estado)
       })) || [];
 
-      const response = { i, g };
+      t = t?.map(item => ({
+        ...item,
+        estado: esPagado(item.estado)
+      })) || [];
+
+      const response = { i, g, t };
 
       const { setDatamovimientos } = get();
       setDatamovimientos(response);
       return response;
     } catch (error) {
       logger.error('Error al mostrar movimientos en store', { error, params: p });
-      return { i: [], g: [] };
+      return { i: [], g: [], t: [] };
     }
   },
 
@@ -131,6 +139,7 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
       const { parametros } = get();
 
       if (parametros.tipocategoria === "b") {
+        // Balance: only ingresos and gastos, transfers don't affect the balance total
         const totalIngresos = data.i?.reduce((sum, item) => sum + Number(item.valor), 0) || 0;
         const totalGastos = data.g?.reduce((sum, item) => sum + Number(item.valor), 0) || 0;
 
@@ -153,6 +162,21 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
           totalMesAñoPagados: ingPagados - gasPagados,
           totalMesAñoPendientes: ingPendientes - gasPendientes
         });
+        return;
+      }
+
+      if (parametros.tipocategoria === "t") {
+        // Transfers: show total amount transferred (informational, no sign)
+        const movimientos = data.t || [];
+        const dtPagados = movimientos.filter(item => esPagado(item.estado));
+        const dtPendientes = movimientos.filter(item => !esPagado(item.estado));
+
+        const total = movimientos.reduce((sum, item) => sum + Number(item.valor), 0);
+        const tpagados = dtPagados.reduce((sum, item) => sum + Number(item.valor), 0);
+        const tpendientes = dtPendientes.reduce((sum, item) => sum + Number(item.valor), 0);
+
+        set({ totalMesAño: total, totalMesAñoPagados: tpagados, totalMesAñoPendientes: tpendientes });
+        logger.debug('Totales calculados (transferencias)', { total, tpagados, tpendientes });
         return;
       }
 

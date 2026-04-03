@@ -77,11 +77,13 @@ export const MovimientosTemplate = (): JSX.Element => {
   const gastos = DataDesplegables.movimientos['g'] as Tipo;
   const ingresos = DataDesplegables.movimientos['i'] as Tipo;
   const balance = DataDesplegables.movimientos['b'] as Tipo;
+  const transferencias = DataDesplegables.movimientos['t'] as Tipo;
 
   const tipos: Record<TipoMovimiento, Tipo> = {
     g: gastos,
     i: ingresos,
-    b: balance
+    b: balance,
+    t: transferencias,
   };
 
   const tipoActual = tipos[tipo.tipo as TipoMovimiento];
@@ -110,10 +112,11 @@ export const MovimientosTemplate = (): JSX.Element => {
 
   const filteredDatamovimientos: DataMovimientos = {
     i: filterMovimientos(datamovimientos?.i || []),
-    g: filterMovimientos(datamovimientos?.g || [])
+    g: filterMovimientos(datamovimientos?.g || []),
+    t: filterMovimientos(datamovimientos?.t || []),
   };
 
-  const calculateFilteredTotals = (tipoMovimiento: "i" | "g" | "b") => {
+  const calculateFilteredTotals = (tipoMovimiento: "i" | "g" | "b" | "t") => {
     const esPagadoLocal = (estado: unknown): boolean => {
       if (typeof estado === "boolean") return estado;
       if (typeof estado === "number") return estado === 1;
@@ -140,6 +143,12 @@ export const MovimientosTemplate = (): JSX.Element => {
         pagados: pIng - pGas,
         pendientes: penIng - penGas
       };
+    } else if (tipoMovimiento === "t") {
+      const movs = filteredDatamovimientos.t;
+      const total = movs.reduce((sum, item) => sum + Number(item.valor), 0);
+      const pagados = movs.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pendientes = movs.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      return { total, pagados, pendientes };
     } else {
       const movs = filteredDatamovimientos[tipoMovimiento as "i" | "g"];
       const total = movs.reduce((sum, item) => sum + Number(item.valor), 0);
@@ -149,7 +158,7 @@ export const MovimientosTemplate = (): JSX.Element => {
     }
   };
 
-  const totals = calculateFilteredTotals(tipo.tipo as "i" | "g" | "b");
+  const totals = calculateFilteredTotals(tipo.tipo as "i" | "g" | "b" | "t");
 
   return (
     <Container onClick={cerrarDesplegables} $isBalanceActive={isBalanceActive}>
@@ -214,7 +223,7 @@ export const MovimientosTemplate = (): JSX.Element => {
             />
             {stateTipo && (
               <ListaMenuDesplegable
-                data={[ingresos, gastos, balance]}
+                data={[ingresos, gastos, balance, transferencias]}
                 top="112%"
                 funcion={(p) => cambiarTipo(p as Tipo)}
               />
@@ -261,13 +270,13 @@ export const MovimientosTemplate = (): JSX.Element => {
       <section className="totales">
         <CardTotales
           total={totals.pendientes}
-          title={obtenerTitulo(tipo.tipo as "i" | "g" | "b", "pendientes")}
+          title={obtenerTitulo(tipo.tipo as "i" | "g" | "b" | "t", "pendientes")}
           color={tipo.color}
           icono={<v.flechaarribalarga />}
         />
         <CardTotales
           total={totals.pagados}
-          title={obtenerTitulo(tipo.tipo as "i" | "g" | "b", "pagados")}
+          title={obtenerTitulo(tipo.tipo as "i" | "g" | "b" | "t", "pagados")}
           color={tipo.color}
           icono={<v.flechaabajolarga />}
         />
@@ -308,13 +317,26 @@ export const MovimientosTemplate = (): JSX.Element => {
             setDataSelect={setDataSelect}
             setAccion={setAccion} />
         }
+
+        {(tipo.tipo == "t" || tipo.tipo == "b")
+          && filteredDatamovimientos.t?.length > 0 &&
+          <TablaMovimientos
+            titulo={"Transferencias"}
+            tipo={transferencias}
+            color={v.colorTransferencias}
+            data={filteredDatamovimientos.t}
+            setOpenRegistro={setOpenRegistro}
+            setDataSelect={setDataSelect}
+            setAccion={setAccion} />
+        }
       </section>
 
 
       {(
-        (tipo.tipo == "b" && filteredDatamovimientos.i?.length == 0 && filteredDatamovimientos.g?.length == 0) ||
+        (tipo.tipo == "b" && filteredDatamovimientos.i?.length == 0 && filteredDatamovimientos.g?.length == 0 && filteredDatamovimientos.t?.length == 0) ||
         (tipo.tipo == "i" && filteredDatamovimientos.i?.length == 0) ||
-        (tipo.tipo == "g" && filteredDatamovimientos.g?.length == 0)
+        (tipo.tipo == "g" && filteredDatamovimientos.g?.length == 0) ||
+        (tipo.tipo == "t" && filteredDatamovimientos.t?.length == 0)
       ) && (
           <section className="empty">
             <Lottieanimacion

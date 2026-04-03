@@ -105,6 +105,11 @@ const ModalContent = styled.div`
 					background: rgba(239, 68, 68, 0.05);
 				}
 
+				&.transferencia {
+					border-left-color: #3b82f6;
+					background: rgba(59, 130, 246, 0.05);
+				}
+
 				.item-info {
 					flex: 1;
 
@@ -198,15 +203,19 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const fechaInicio = date.startOf("month").format("YYYY-MM-DD");
 	const fechaFin = date.endOf("month").format("YYYY-MM-DD");
 
-	// Obtener movimientos del mes
+	// Obtener movimientos del mes (incluyendo transferencias)
 	const { data: movimientos, isLoading: isLoadingMovs } = useQuery<Movimiento[], Error>({
 		queryKey: ["movimientos-cuenta", cuenta.id, fechaInicio, fechaFin],
 		queryFn: async () => {
 			try {
+				const cuentaId = Number(cuenta.id);
+				if (!Number.isInteger(cuentaId) || cuentaId <= 0) {
+					return [];
+				}
 				const { data, error } = await supabase
 					.from("movimientos")
 					.select("*")
-					.eq("idcuenta", cuenta.id)
+					.or(`idcuenta.eq.${cuentaId},idcuenta_origen.eq.${cuentaId},idcuenta_destino.eq.${cuentaId}`)
 					.eq("estado", true)
 					.gte("fecha", fechaInicio)
 					.lte("fecha", fechaFin)
@@ -242,6 +251,14 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 		.filter((m) => m.tipo === "g")
 		.reduce((sum, m) => sum + (m.valor || 0), 0);
 
+	const totalTransferenciasEntrantes = movimientosFiltrados
+		.filter((m) => m.tipo === "t" && m.idcuenta_destino === cuenta.id)
+		.reduce((sum, m) => sum + (m.valor || 0), 0);
+
+	const totalTransferenciasSalientes = movimientosFiltrados
+		.filter((m) => m.tipo === "t" && m.idcuenta_origen === cuenta.id)
+		.reduce((sum, m) => sum + (m.valor || 0), 0);
+
 	const handleClose = (e: React.MouseEvent) => {
 		if (e.target === e.currentTarget) {
 			onClose();
@@ -254,7 +271,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const handleSetToday = () => setDate(dayjs());
 
 	const saldoInicial = saldoAnterior || 0;
-	const saldoFinal = saldoInicial + totalIngresos - totalGastos;
+	const saldoFinal = saldoInicial + totalIngresos - totalGastos + totalTransferenciasEntrantes - totalTransferenciasSalientes;
 
 	return (
 		<ModalOverlay onClick={handleClose}>
@@ -295,6 +312,18 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 							<span className="label">(-) Gastos</span>
 							<span className="valor gasto">-{usuario?.moneda} {totalGastos.toFixed(2)}</span>
 						</div>
+						{totalTransferenciasEntrantes > 0 && (
+							<div className="total-row">
+								<span className="label">(+) Transferencias recibidas</span>
+								<span className="valor ingreso">+{usuario?.moneda} {totalTransferenciasEntrantes.toFixed(2)}</span>
+							</div>
+						)}
+						{totalTransferenciasSalientes > 0 && (
+							<div className="total-row">
+								<span className="label">(-) Transferencias enviadas</span>
+								<span className="valor gasto">-{usuario?.moneda} {totalTransferenciasSalientes.toFixed(2)}</span>
+							</div>
+						)}
 						<div className="total-row main-balance">
 							<span className="label">Saldo final</span>
 							<span className="valor">
@@ -314,22 +343,31 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 					) : movimientosFiltrados.length > 0 ? (
 						<>
 							<div className="movimientos-list">
-								{movimientosFiltrados.map((movimiento) => (
-									<div
-										key={movimiento.id}
-										className={`movimiento-item ${movimiento.tipo === "i" ? "ingreso" : "gasto"}`}
-									>
-										<div className="item-info">
-											<div className="item-descripcion">{movimiento.descripcion}</div>
-											<div className="item-fecha">
-												{dayjs(movimiento.fecha).format("DD MMM YYYY")}
+								{movimientosFiltrados.map((movimiento) => {
+									const esTransferencia = movimiento.tipo === "t";
+									const esEntrada = esTransferencia
+										? movimiento.idcuenta_destino === cuenta.id
+										: movimiento.tipo === "i";
+									const claseTipo = esTransferencia ? "transferencia" : (movimiento.tipo === "i" ? "ingreso" : "gasto");
+									return (
+										<div
+											key={movimiento.id}
+											className={`movimiento-item ${claseTipo}`}
+										>
+											<div className="item-info">
+												<div className="item-descripcion">
+													{esTransferencia ? `💸 ${movimiento.descripcion || "Transferencia"}` : movimiento.descripcion}
+												</div>
+												<div className="item-fecha">
+													{dayjs(movimiento.fecha).format("DD MMM YYYY")}
+												</div>
+											</div>
+											<div className={`item-valor ${esEntrada ? "ingreso" : "gasto"}`}>
+												{esEntrada ? "+" : "-"} {usuario?.moneda} {Math.abs(movimiento.valor || 0).toFixed(2)}
 											</div>
 										</div>
-										<div className={`item-valor ${movimiento.tipo === "i" ? "ingreso" : "gasto"}`}>
-											{movimiento.tipo === "i" ? "+" : "-"} {usuario?.moneda} {Math.abs(movimiento.valor || 0).toFixed(2)}
-										</div>
-									</div>
-								))}
+									);
+								})}
 							</div>
 						</>
 					) : (

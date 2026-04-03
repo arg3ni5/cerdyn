@@ -68,6 +68,12 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
   const [stateModoRecurrencia, setStateModoRecurrencia] = useState<boolean>(false);
   const [statePoliticaRecurrencia, setStatePoliticaRecurrencia] = useState<boolean>(false);
 
+  // Transfer-specific state
+  const [cuentaOrigen, setCuentaOrigen] = useState<Cuenta | null>(null);
+  const [cuentaDestino, setCuentaDestino] = useState<Cuenta | null>(null);
+  const [stateCuentaOrigen, setStateCuentaOrigen] = useState<boolean>(false);
+  const [stateCuentaDestino, setStateCuentaDestino] = useState<boolean>(false);
+
   // Recurrence state
   const [esRecurrente, setEsRecurrente] = useState<boolean>(false);
   const [modoRecurrencia, setModoRecurrencia] = useState<'intervalo' | 'mensual'>('intervalo');
@@ -93,6 +99,8 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
     (tipoInicial ? DataDesplegables.movimientos[tipoInicial] : undefined) || {} as Tipo
   );
   const fechaactual = new Date();
+
+  const esTransferencia = tipoMovimiento?.tipo === "t";
 
   useEffect(() => {
     const tipo = dataSelect?.tipo || (accion === "Nuevo" && selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
@@ -159,24 +167,50 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
   }, [repeticionesForm]);
 
   const insertar = async (formData: FormInputs): Promise<void> => {
-    if (categoriaItemSelect == null) {
-      showErrorMessage("Seleccione una categoria");
-      return;
-    }
-    if (cuentaItemSelect == null) {
-      showErrorMessage("Seleccione una cuenta");
-      return;
+    if (esTransferencia) {
+      if (cuentaOrigen == null) {
+        showErrorMessage("Seleccione la cuenta origen");
+        return;
+      }
+      if (cuentaDestino == null) {
+        showErrorMessage("Seleccione la cuenta destino");
+        return;
+      }
+      if (cuentaOrigen.id === cuentaDestino.id) {
+        showErrorMessage("La cuenta origen y destino deben ser diferentes");
+        return;
+      }
+    } else {
+      if (categoriaItemSelect == null) {
+        showErrorMessage("Seleccione una categoria");
+        return;
+      }
+      if (cuentaItemSelect == null) {
+        showErrorMessage("Seleccione una cuenta");
+        return;
+      }
     }
 
-    const baseData = {
-      descripcion: formData.descripcion,
-      estado: estado,
-      fecha: formData.fecha,
-      idcategoria: categoriaItemSelect.id,
-      idcuenta: cuentaItemSelect.id,
-      tipo: tipoMovimiento.tipo,
-      valor: parseFloat(formData.monto.toString()),
-    } as MovimientoInsert;
+    const baseData: MovimientoInsert = esTransferencia
+      ? {
+          descripcion: formData.descripcion,
+          estado: estado,
+          fecha: formData.fecha,
+          tipo: "t",
+          valor: parseFloat(formData.monto.toString()),
+          idcuenta: null,
+          idcuenta_origen: cuentaOrigen!.id,
+          idcuenta_destino: cuentaDestino!.id,
+        }
+      : {
+          descripcion: formData.descripcion,
+          estado: estado,
+          fecha: formData.fecha,
+          idcategoria: categoriaItemSelect!.id,
+          idcuenta: cuentaItemSelect!.id,
+          tipo: tipoMovimiento.tipo,
+          valor: parseFloat(formData.monto.toString()),
+        };
 
     try {
       if (esRecurrente) {
@@ -225,25 +259,52 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
   };
 
   const actualizar = async (formData: FormInputs): Promise<void> => {
-    if (categoriaItemSelect == null) {
-      showErrorMessage("Seleccione una categoria");
-      return;
-    }
-    if (cuentaItemSelect == null) {
-      showErrorMessage("Seleccione una cuenta");
-      return;
+    if (esTransferencia) {
+      if (cuentaOrigen == null) {
+        showErrorMessage("Seleccione la cuenta origen");
+        return;
+      }
+      if (cuentaDestino == null) {
+        showErrorMessage("Seleccione la cuenta destino");
+        return;
+      }
+      if (cuentaOrigen.id === cuentaDestino.id) {
+        showErrorMessage("La cuenta origen y destino deben ser diferentes");
+        return;
+      }
+    } else {
+      if (categoriaItemSelect == null) {
+        showErrorMessage("Seleccione una categoria");
+        return;
+      }
+      if (cuentaItemSelect == null) {
+        showErrorMessage("Seleccione una cuenta");
+        return;
+      }
     }
 
-    const baseData = {
-      descripcion: formData.descripcion,
-      estado: estado,
-      fecha: formData.fecha,
-      id: dataSelect.id,
-      idcategoria: categoriaItemSelect.id,
-      idcuenta: cuentaItemSelect.id,
-      tipo: tipoMovimiento.tipo,
-      valor: parseFloat(formData.monto.toString()),
-    } as MovimientoUpdate;
+    const baseData: MovimientoUpdate = esTransferencia
+      ? {
+          descripcion: formData.descripcion,
+          estado: estado,
+          fecha: formData.fecha,
+          id: dataSelect.id,
+          tipo: "t",
+          valor: parseFloat(formData.monto.toString()),
+          idcuenta: null,
+          idcuenta_origen: cuentaOrigen!.id,
+          idcuenta_destino: cuentaDestino!.id,
+        }
+      : {
+          descripcion: formData.descripcion,
+          estado: estado,
+          fecha: formData.fecha,
+          id: dataSelect.id,
+          idcategoria: categoriaItemSelect!.id,
+          idcuenta: cuentaItemSelect!.id,
+          tipo: tipoMovimiento.tipo,
+          valor: parseFloat(formData.monto.toString()),
+        };
     try {
       console.log('actualizar', baseData);
 
@@ -288,6 +349,15 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
     if (accion !== "Editar") return;
     if (!cuentas?.length) return;
 
+    if (dataSelect?.tipo === "t") {
+      // For transfers, set origin and destination accounts
+      const origen = cuentas.find(c => c.id === dataSelect.idcuenta_origen);
+      const destino = cuentas.find(c => c.id === dataSelect.idcuenta_destino);
+      if (origen) setCuentaOrigen(origen);
+      if (destino) setCuentaDestino(destino);
+      return;
+    }
+
     const cuentaNombre = (dataSelect as Movimiento & { cuenta?: string })?.cuenta;
     const cuentaSeleccionada = cuentas.find((cuenta) => {
       if (dataSelect?.idcuenta) return cuenta.id === dataSelect.idcuenta;
@@ -298,7 +368,7 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
     if (cuentaSeleccionada) {
       selectCuenta(cuentaSeleccionada);
     }
-  }, [accion, dataSelect?.idcuenta, (dataSelect as Movimiento & { cuenta?: string })?.cuenta, cuentas, selectCuenta]);
+  }, [accion, dataSelect?.idcuenta, dataSelect?.tipo, dataSelect?.idcuenta_origen, dataSelect?.idcuenta_destino, (dataSelect as Movimiento & { cuenta?: string })?.cuenta, cuentas, selectCuenta]);
 
   useEffect(() => {
     if (accion !== "Editar") return;
@@ -390,54 +460,108 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
               />
             </div>
 
-            <ContenedorDropdown>
-              <label>Cuenta: </label>
-              <Selector
-                color="#e14e19"
-                texto1={cuentaItemSelect?.icono}
-                texto2={cuentaItemSelect?.descripcion || "Seleccionar Cuenta"}
-                funcion={() => setStateCuenta(!stateCuenta)}
-              />
-              {stateCuenta && (
-                <ListaGenerica
-                  placement="down"
-                  mobilePlacement="up"
-                  scroll="auto"
-                  setState={() => setStateCuenta(!stateCuenta)}
-                  data={cuentas?.map(cuenta => ({
-                    ...cuenta,
-                    descripcion: cuenta.descripcion || '',
-                    icono: cuenta.icono || ''
-                  })) || []}
-                  funcion={selectCuenta}
-                />
-              )}
-            </ContenedorDropdown>
+            {esTransferencia ? (
+              <>
+                <ContenedorDropdown>
+                  <label>Cuenta origen: </label>
+                  <Selector
+                    color="#3b82f6"
+                    texto1={cuentaOrigen?.icono}
+                    texto2={cuentaOrigen?.descripcion || "Seleccionar cuenta origen"}
+                    funcion={() => setStateCuentaOrigen(!stateCuentaOrigen)}
+                  />
+                  {stateCuentaOrigen && (
+                    <ListaGenerica
+                      placement="down"
+                      mobilePlacement="up"
+                      scroll="auto"
+                      setState={() => setStateCuentaOrigen(!stateCuentaOrigen)}
+                      data={cuentas?.map(cuenta => ({
+                        ...cuenta,
+                        descripcion: cuenta.descripcion || '',
+                        icono: cuenta.icono || ''
+                      })) || []}
+                      funcion={(c) => { setCuentaOrigen(c as Cuenta); setStateCuentaOrigen(false); }}
+                    />
+                  )}
+                </ContenedorDropdown>
 
-            <ContenedorDropdown>
-              <label>Categoria: </label>
-              <Selector
-                color="#e14e19"
-                texto1={categoriaItemSelect?.icono}
-                texto2={categoriaItemSelect?.descripcion || "Seleccionar Categoria"}
-                funcion={() => setStateCategorias(!stateCategorias)}
-              />
+                <ContenedorDropdown>
+                  <label>Cuenta destino: </label>
+                  <Selector
+                    color="#3b82f6"
+                    texto1={cuentaDestino?.icono}
+                    texto2={cuentaDestino?.descripcion || "Seleccionar cuenta destino"}
+                    funcion={() => setStateCuentaDestino(!stateCuentaDestino)}
+                  />
+                  {stateCuentaDestino && (
+                    <ListaGenerica
+                      placement="up"
+                      mobilePlacement="up"
+                      scroll="auto"
+                      setState={() => setStateCuentaDestino(!stateCuentaDestino)}
+                      data={cuentas?.filter(c => c.id !== cuentaOrigen?.id).map(cuenta => ({
+                        ...cuenta,
+                        descripcion: cuenta.descripcion || '',
+                        icono: cuenta.icono || ''
+                      })) || []}
+                      funcion={(c) => { setCuentaDestino(c as Cuenta); setStateCuentaDestino(false); }}
+                    />
+                  )}
+                </ContenedorDropdown>
+              </>
+            ) : (
+              <>
+                <ContenedorDropdown>
+                  <label>Cuenta: </label>
+                  <Selector
+                    color="#e14e19"
+                    texto1={cuentaItemSelect?.icono}
+                    texto2={cuentaItemSelect?.descripcion || "Seleccionar Cuenta"}
+                    funcion={() => setStateCuenta(!stateCuenta)}
+                  />
+                  {stateCuenta && (
+                    <ListaGenerica
+                      placement="down"
+                      mobilePlacement="up"
+                      scroll="auto"
+                      setState={() => setStateCuenta(!stateCuenta)}
+                      data={cuentas?.map(cuenta => ({
+                        ...cuenta,
+                        descripcion: cuenta.descripcion || '',
+                        icono: cuenta.icono || ''
+                      })) || []}
+                      funcion={selectCuenta}
+                    />
+                  )}
+                </ContenedorDropdown>
 
-              {stateCategorias && (
-                <ListaGenerica
-                  placement="up"
-                  mobilePlacement="up"
-                  scroll="auto"
-                  setState={() => setStateCategorias(!stateCategorias)}
-                  data={categorias?.map(cat => ({
-                    ...cat,
-                    descripcion: cat.descripcion || '',
-                    icono: cat.icono || ''
-                  })) || []}
-                  funcion={selectCategoria}
-                />
-              )}
-            </ContenedorDropdown>
+                <ContenedorDropdown>
+                  <label>Categoria: </label>
+                  <Selector
+                    color="#e14e19"
+                    texto1={categoriaItemSelect?.icono}
+                    texto2={categoriaItemSelect?.descripcion || "Seleccionar Categoria"}
+                    funcion={() => setStateCategorias(!stateCategorias)}
+                  />
+
+                  {stateCategorias && (
+                    <ListaGenerica
+                      placement="up"
+                      mobilePlacement="up"
+                      scroll="auto"
+                      setState={() => setStateCategorias(!stateCategorias)}
+                      data={categorias?.map(cat => ({
+                        ...cat,
+                        descripcion: cat.descripcion || '',
+                        icono: cat.icono || ''
+                      })) || []}
+                      funcion={selectCategoria}
+                    />
+                  )}
+                </ContenedorDropdown>
+              </>
+            )}
 
             {accion === "Nuevo" && (
               <ContainerRecurrencia>
