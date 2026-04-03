@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { v, useUsuariosStore, BtnCircular } from "../../index";
+import { useUsuariosStore, BtnCircular } from "../../index";
 import { JSX } from "react";
 
 interface CardTotalesProps {
@@ -23,7 +23,6 @@ export const CardTotales = ({ color, total, title, icono }: CardTotalesProps): J
       <div className="contentTextos">
         <section>
           <span className="title">{title}</span>
-          <b>{<v.iconoFlechabajo />}</b>
         </section>
         <span className="total">
           {usuario?.moneda} {formatearTotal(total)}

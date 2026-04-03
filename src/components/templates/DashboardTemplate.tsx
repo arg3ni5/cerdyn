@@ -14,9 +14,9 @@ export const DashboardTemplate = () => {
   const [state, setState] = useState(false);
 
   const {
-    totalMesAño,
     totalMesAñoPagados,
-    totalMesAñoPendientes,
+    ingresosPagadosMes,
+    gastosPagadosMes,
   } = useMovimientosStore();
 
   return (
@@ -33,20 +33,20 @@ export const DashboardTemplate = () => {
 
       <section className="totales">
         <CardTotales
-          total={totalMesAñoPendientes}
-          title="Ingresos / Gastos pendientes"
-          color={v.colorBalance}
+          total={ingresosPagadosMes}
+          title="Ingresos pagados"
+          color={v.colorIngresos}
           icono={<v.flechaarribalarga />}
         />
         <CardTotales
-          total={totalMesAñoPagados}
-          title="Ingresos / Gastos pagados"
-          color={v.colorBalance}
+          total={gastosPagadosMes}
+          title="Gastos pagados"
+          color={v.colorGastos}
           icono={<v.flechaabajolarga />}
         />
         <CardTotales
-          total={totalMesAño}
-          title="Balance mensual"
+          total={totalMesAñoPagados}
+          title="Balance pagado"
           color={v.colorBalance}
           icono={<v.balance />}
         />
