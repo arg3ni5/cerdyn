@@ -325,6 +325,34 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
     setStateTipo(!stateTipo);
   };
 
+  const toggleCuenta = (): void => {
+    setStateCuenta(!stateCuenta);
+    setStateCategorias(false);
+    setStateCuentaOrigen(false);
+    setStateCuentaDestino(false);
+  };
+
+  const toggleCategorias = (): void => {
+    setStateCategorias(!stateCategorias);
+    setStateCuenta(false);
+    setStateCuentaOrigen(false);
+    setStateCuentaDestino(false);
+  };
+
+  const toggleCuentaOrigen = (): void => {
+    setStateCuentaOrigen(!stateCuentaOrigen);
+    setStateCuentaDestino(false);
+    setStateCuenta(false);
+    setStateCategorias(false);
+  };
+
+  const toggleCuentaDestino = (): void => {
+    setStateCuentaDestino(!stateCuentaDestino);
+    setStateCuentaOrigen(false);
+    setStateCuenta(false);
+    setStateCategorias(false);
+  };
+
   const { data: cuentas } = useQuery({
     queryKey: ["cuentas", idusuario],
     queryFn: () => mostrarCuentas({ idusuario } as Cuenta),
@@ -462,19 +490,23 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
 
             {esTransferencia ? (
               <>
-                <ContenedorDropdown>
+                <ContenedorDropdown $active={stateCuentaOrigen}>
                   <label>Cuenta origen: </label>
                   <Selector
                     color="#3b82f6"
                     texto1={cuentaOrigen?.icono}
                     texto2={cuentaOrigen?.descripcion || "Seleccionar cuenta origen"}
-                    funcion={() => setStateCuentaOrigen(!stateCuentaOrigen)}
+                    funcion={toggleCuentaOrigen}
                   />
                   {stateCuentaOrigen && (
                     <ListaGenerica
                       placement="down"
                       mobilePlacement="up"
                       scroll="auto"
+                      filterable
+                      filterPlaceholder="Buscar cuenta origen..."
+                      emptyMessage="No hay cuentas origen que coincidan."
+                      filterBy={["descripcion"]}
                       setState={() => setStateCuentaOrigen(!stateCuentaOrigen)}
                       data={cuentas?.map(cuenta => ({
                         ...cuenta,
@@ -486,19 +518,23 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                   )}
                 </ContenedorDropdown>
 
-                <ContenedorDropdown>
+                <ContenedorDropdown $active={stateCuentaDestino}>
                   <label>Cuenta destino: </label>
                   <Selector
                     color="#3b82f6"
                     texto1={cuentaDestino?.icono}
                     texto2={cuentaDestino?.descripcion || "Seleccionar cuenta destino"}
-                    funcion={() => setStateCuentaDestino(!stateCuentaDestino)}
+                    funcion={toggleCuentaDestino}
                   />
                   {stateCuentaDestino && (
                     <ListaGenerica
                       placement="up"
                       mobilePlacement="up"
                       scroll="auto"
+                      filterable
+                      filterPlaceholder="Buscar cuenta destino..."
+                      emptyMessage="No hay cuentas destino que coincidan."
+                      filterBy={["descripcion"]}
                       setState={() => setStateCuentaDestino(!stateCuentaDestino)}
                       data={cuentas?.filter(c => c.id !== cuentaOrigen?.id).map(cuenta => ({
                         ...cuenta,
@@ -512,19 +548,23 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
               </>
             ) : (
               <>
-                <ContenedorDropdown>
+                <ContenedorDropdown $active={stateCuenta}>
                   <label>Cuenta: </label>
                   <Selector
                     color="#e14e19"
                     texto1={cuentaItemSelect?.icono}
                     texto2={cuentaItemSelect?.descripcion || "Seleccionar Cuenta"}
-                    funcion={() => setStateCuenta(!stateCuenta)}
+                    funcion={toggleCuenta}
                   />
                   {stateCuenta && (
                     <ListaGenerica
                       placement="down"
                       mobilePlacement="up"
                       scroll="auto"
+                      filterable
+                      filterPlaceholder="Buscar cuenta..."
+                      emptyMessage="No hay cuentas que coincidan."
+                      filterBy={["descripcion"]}
                       setState={() => setStateCuenta(!stateCuenta)}
                       data={cuentas?.map(cuenta => ({
                         ...cuenta,
@@ -536,13 +576,13 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                   )}
                 </ContenedorDropdown>
 
-                <ContenedorDropdown>
+                <ContenedorDropdown $active={stateCategorias}>
                   <label>Categoria: </label>
                   <Selector
                     color="#e14e19"
                     texto1={categoriaItemSelect?.icono}
                     texto2={categoriaItemSelect?.descripcion || "Seleccionar Categoria"}
-                    funcion={() => setStateCategorias(!stateCategorias)}
+                    funcion={toggleCategorias}
                   />
 
                   {stateCategorias && (
@@ -550,6 +590,10 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
                       placement="up"
                       mobilePlacement="up"
                       scroll="auto"
+                      filterable
+                      filterPlaceholder="Buscar categoría..."
+                      emptyMessage="No hay categorías que coincidan."
+                      filterBy={["descripcion"]}
                       setState={() => setStateCategorias(!stateCategorias)}
                       data={categorias?.map(cat => ({
                         ...cat,

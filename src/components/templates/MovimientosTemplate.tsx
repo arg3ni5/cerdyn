@@ -4,7 +4,6 @@ import {
   Btndesplegable,
   useOperaciones,
   ListaMenuDesplegable,
-  Btnfiltro,
   v,
   Lottieanimacion,
   Tipo,
@@ -17,7 +16,6 @@ import {
   Selector,
   ListaGenerica,
   useCategoriasStore,
-  Categoria,
   DataMovimientos,
   CalendarioLineal,
   obtenerTitulo,
@@ -30,7 +28,25 @@ import vacioverde from "../../assets/vacioverde.json";
 import vaciorojo from "../../assets/vaciorojo.json";
 import vacioazul from "../../assets/vacioazul.json";
 import { DataDesplegables } from '../../utils/dataEstatica';
-import { Container, ContentFiltro, TipoBar, MobileOnly, DesktopOnly } from './MovimientosTemplate.styles';
+import {
+  ActionCard,
+  CalendarShell,
+  Container,
+  ContentFiltro,
+  DesktopOnly,
+  EmptyState,
+  Eyebrow,
+  HeroCopy,
+  HeroStats,
+  MobileOnly,
+  PrimaryAction,
+  SearchCard,
+  ToolbarActions,
+  ToolbarCard,
+  ToolbarDescription,
+  ToolbarLabel,
+  TypeBadge,
+} from './MovimientosTemplate.styles';
 
 
 export const MovimientosTemplate = (): JSX.Element => {
@@ -40,9 +56,6 @@ export const MovimientosTemplate = (): JSX.Element => {
   const [stateTipo, setStateTipo] = useState(false);
   const { setTipoMovimientos, selectTipoMovimiento: tipo } = useOperaciones();
   const {
-    totalMesAño,
-    totalMesAñoPagados,
-    totalMesAñoPendientes,
     datamovimientos,
     filtroDescripcion,
     filtroCategoria,
@@ -159,6 +172,16 @@ export const MovimientosTemplate = (): JSX.Element => {
   };
 
   const totals = calculateFilteredTotals(tipo.tipo as "i" | "g" | "b" | "t");
+  const totalVisible =
+    (filteredDatamovimientos.i?.length || 0) +
+    (filteredDatamovimientos.g?.length || 0) +
+    (filteredDatamovimientos.t?.length || 0);
+  const typeDescriptionMap: Record<TipoMovimiento, string> = {
+    g: "Revisá tus gastos del período, filtrá rápido por categoría y encontrá en qué se está yendo el dinero.",
+    i: "Seguile la pista a tus ingresos con una vista más limpia para detectar entradas registradas, pagadas y pendientes.",
+    b: "Compará ingresos, gastos y transferencias en una sola vista para entender cómo viene tu balance general.",
+    t: "Controlá tus transferencias entre cuentas y revisá cuáles ya quedaron registradas dentro del período activo.",
+  };
 
   return (
     <Container onClick={cerrarDesplegables} $isBalanceActive={isBalanceActive}>
@@ -175,96 +198,157 @@ export const MovimientosTemplate = (): JSX.Element => {
         <Header stateConfig={{ state: state, setState: openUser }} />
       </header>
 
-      <TipoBar className="tipo">
-        <ContentFiltros>
-          <DesktopOnly>
-            <div className="filtros-activo">
-              <BtnIcono
-                active
-                icono={tipoActual.icono}
-                textcolor={tipoActual.color}
-                bgcolor={tipoActual.bgcolor}
-                text={`${tipoActual.text}s`}
-                funcion={() => { }}
-              />
-            </div>
+      <section className="hero">
+        <HeroCopy>
+          <Eyebrow>Movimientos</Eyebrow>
+          <h1>{tipoActual.text}s con más contexto</h1>
+          <p>{typeDescriptionMap[tipo.tipo as TipoMovimiento]}</p>
+        </HeroCopy>
 
-            <div className="filtros-secundarios">
-              <BtnIcono
-                icono={tipoAlterno.icono}
-                textcolor={tipoAlterno.color}
-                bgcolor={tipoAlterno.bgcolor}
-                text={`Ver ${tipoAlterno.text}s`}
-                funcion={() => { cambiarTipo(accionAlterno) }}
-              />
+        <HeroStats>
+          <span>Movimientos visibles</span>
+          <strong>{totalVisible}</strong>
+          <small>{totalVisible === 1 ? "registro filtrado" : "registros filtrados"}</small>
+          <TypeBadge $bgcolor={tipoActual.bgcolor} $textcolor={tipoActual.color}>
+            {tipoActual.text}
+          </TypeBadge>
+        </HeroStats>
+      </section>
 
-              <BtnIcono
-                icono={tipoTercero.icono}
-                textcolor={tipoTercero.color}
-                bgcolor={tipoTercero.bgcolor}
-                text={`Ver ${tipoTercero.text}s`}
-                funcion={() => cambiarTipo(accionTercero)}
-              />
-            </div>
-          </DesktopOnly>
+      <section className="toolbar">
+        <ToolbarCard
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <ToolbarLabel>Tipo de movimiento</ToolbarLabel>
+          <ToolbarDescription>
+            Alterná entre ingresos, gastos, balance y transferencias sin perder el contexto del período.
+          </ToolbarDescription>
+          <ToolbarActions>
+            <ContentFiltros>
+              <DesktopOnly>
+                <div className="filtros-activo">
+                  <BtnIcono
+                    active
+                    icono={tipoActual.icono}
+                    textcolor={tipoActual.color}
+                    bgcolor={tipoActual.bgcolor}
+                    text={`${tipoActual.text}s`}
+                    funcion={() => { }}
+                  />
+                </div>
 
-          <MobileOnly
+                <div className="filtros-secundarios">
+                  <BtnIcono
+                    icono={tipoAlterno.icono}
+                    textcolor={tipoAlterno.color}
+                    bgcolor={tipoAlterno.bgcolor}
+                    text={`Ver ${tipoAlterno.text}s`}
+                    funcion={() => { cambiarTipo(accionAlterno) }}
+                  />
+
+                  <BtnIcono
+                    icono={tipoTercero.icono}
+                    textcolor={tipoTercero.color}
+                    bgcolor={tipoTercero.bgcolor}
+                    text={`Ver ${tipoTercero.text}s`}
+                    funcion={() => cambiarTipo(accionTercero)}
+                  />
+                </div>
+              </DesktopOnly>
+
+              <MobileOnly
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <Btndesplegable
+                  icono={tipoActual.icono}
+                  textcolor={tipoActual.color}
+                  bgcolor={tipoActual.bgcolor}
+                  text={tipoActual.text}
+                  active
+                  funcion={openTipo}
+                />
+                {stateTipo && (
+                  <ListaMenuDesplegable
+                    data={[ingresos, gastos, balance, transferencias]}
+                    top="112%"
+                    funcion={(p) => cambiarTipo(p as Tipo)}
+                  />
+                )}
+              </MobileOnly>
+            </ContentFiltros>
+          </ToolbarActions>
+        </ToolbarCard>
+
+        <ActionCard>
+          <ToolbarLabel>Nuevo movimiento</ToolbarLabel>
+          <ToolbarDescription>
+            Registrá un movimiento manual para mantener el período al día desde esta misma pantalla.
+          </ToolbarDescription>
+          <PrimaryAction
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
+              nuevoRegistro();
             }}
+            $bgcolor={tipo.bgcolor}
+            $textcolor={tipo.color}
           >
-            <Btndesplegable
-              icono={tipoActual.icono}
-              textcolor={tipoActual.color}
-              bgcolor={tipoActual.bgcolor}
-              text={tipoActual.text}
-              active
-              funcion={openTipo}
-            />
-            {stateTipo && (
-              <ListaMenuDesplegable
-                data={[ingresos, gastos, balance, transferencias]}
-                top="112%"
-                funcion={(p) => cambiarTipo(p as Tipo)}
-              />
-            )}
-          </MobileOnly>
-        </ContentFiltros>
-        {/* boton agregar */}
-        <ContentFiltro>
-          <Btnfiltro
-            funcion={nuevoRegistro}
-            bgcolor={tipo.bgcolor}
-            textcolor={tipo.color}
-            icono={<v.agregar />}
-          />
-        </ContentFiltro>
-      </TipoBar>
+            <span className="icon">
+              <v.agregar />
+            </span>
+            <span>Agregar Movimiento</span>
+          </PrimaryAction>
+        </ActionCard>
+      </section>
 
       <section className="busqueda">
-        <InputBuscadorLista
-          placeholder="Buscar por descripción o monto..."
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiltros(e.target.value, filtroCategoria)}
-        />
-        <div style={{ position: 'relative' }}>
-          <Selector
-            color={tipo.color}
-            texto1="Categoría: "
-            texto2={filtroCategoria || "Todas"}
-            funcion={() => setStateListaCategorias(!stateListaCategorias)}
-            state={stateListaCategorias}
+        <SearchCard>
+          <div>
+            <ToolbarLabel>Búsqueda rápida</ToolbarLabel>
+            <ToolbarDescription>
+              Encontrá un movimiento por descripción o monto sin salir del período actual.
+            </ToolbarDescription>
+          </div>
+          <InputBuscadorLista
+            placeholder="Buscar por descripción o monto..."
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiltros(e.target.value, filtroCategoria)}
           />
-          {stateListaCategorias && (
-            <ListaGenerica
-              data={[
-                { icono: "📁", descripcion: "Todas" },
-                ...(datacategoria?.map(c => ({ icono: c.icono, descripcion: c.descripcion })) || [])
-              ]}
-              setState={() => setStateListaCategorias(false)}
-              funcion={(item) => setFiltros(filtroDescripcion, item.descripcion === "Todas" ? "" : item.descripcion)}
+        </SearchCard>
+        <SearchCard
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <div>
+            <ToolbarLabel>Filtrar por categoría</ToolbarLabel>
+            <ToolbarDescription>
+              Enfocá la lista en una categoría puntual para revisar mejor el detalle.
+            </ToolbarDescription>
+          </div>
+          <ContentFiltro>
+            <Selector
+              color={tipo.color}
+              texto1="Categoría: "
+              texto2={filtroCategoria || "Todas"}
+              funcion={() => setStateListaCategorias(!stateListaCategorias)}
+              state={stateListaCategorias}
             />
-          )}
-        </div>
+            {stateListaCategorias && (
+              <ListaGenerica
+                data={[
+                  { icono: "📁", descripcion: "Todas" },
+                  ...(datacategoria?.map(c => ({ icono: c.icono, descripcion: c.descripcion })) || [])
+                ]}
+                setState={() => setStateListaCategorias(false)}
+                funcion={(item) => setFiltros(filtroDescripcion, item.descripcion === "Todas" ? "" : item.descripcion)}
+              />
+            )}
+          </ContentFiltro>
+        </SearchCard>
       </section>
 
       <section className="totales">
@@ -289,7 +373,9 @@ export const MovimientosTemplate = (): JSX.Element => {
       </section>
 
       <section className="calendario">
-        <CalendarioLineal />
+        <CalendarShell>
+          <CalendarioLineal />
+        </CalendarShell>
       </section>
 
       <section className="main">
@@ -338,13 +424,19 @@ export const MovimientosTemplate = (): JSX.Element => {
         (tipo.tipo == "g" && filteredDatamovimientos.g?.length == 0) ||
         (tipo.tipo == "t" && filteredDatamovimientos.t?.length == 0)
       ) && (
-          <section className="empty">
+          <EmptyState className="empty">
             <Lottieanimacion
               alto={300}
               ancho={300}
               animacion={tipo.tipo == "i" ? vacioverde : (tipo.tipo == "g" ? vaciorojo : vacioazul)}
             />
-          </section>
+            <div className="empty-copy">
+              <h2>No hay movimientos para mostrar</h2>
+              <p>
+                Probá cambiar el tipo, ajustar la categoría o registrar un nuevo movimiento para empezar a ver actividad en esta vista.
+              </p>
+            </div>
+          </EmptyState>
         )}
     </Container>
   );

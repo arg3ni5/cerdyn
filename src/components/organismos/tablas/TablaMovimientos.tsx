@@ -39,7 +39,7 @@ export const TablaMovimientos = ({
   }
 
   const [pagina, setPagina] = useState<number>(1);
-  const [porPagina, setPorPagina] = useState<number>(10);
+  const porPagina = 10;
 
   // Agrupar movimientos por fecha
   const groupedData = useMemo(() => {
@@ -182,11 +182,15 @@ interface ContainerProps {
   $color: string;
 }
 const Container = styled.div<ContainerProps>`
-  border-radius: 25px;
+  border-radius: 30px;
   width: 100%;
-  background-color: ${(props) => hexToRgba(props.$color, 0.14)};
+  background:
+    linear-gradient(180deg, ${({ theme }) => theme.bg3} 0%, ${({ theme }) => theme.bg3} 100%),
+    ${(props) => hexToRgba(props.$color, 0.14)};
   --table-bg: ${(props) => hexToRgba(props.$color, 0.14)};
   --table-bg-solid: color-mix(in srgb, ${(props) => props.$color} 14%, ${({ theme }) => theme.bg} 86%);
+  box-shadow: 0 18px 36px rgba(18, 47, 79, 0.08);
+  border: 1px solid ${({ theme }) => theme.text}10;
 
   position: relative;
 
@@ -194,13 +198,16 @@ const Container = styled.div<ContainerProps>`
   flex: 1 1 100%;
 
   h3 {
-    padding: 10px 20px ;
+    margin: 0;
+    padding: 18px 22px 8px;
+    font-size: 1.15rem;
+    font-weight: 800;
   }
   .table-wrapper {
     max-height: 500px;
     overflow-y: auto;
     overflow-x: hidden;
-    border-radius: 0 0 25px 25px;
+    border-radius: 0 0 30px 30px;
 
     /* Estilo del scrollbar */
     &::-webkit-scrollbar {
@@ -259,8 +266,10 @@ const Container = styled.div<ContainerProps>`
         border-bottom: 2px solid rgba(115, 115, 115, 0.32);
       }
       th {
-        border-bottom: 2px solid rgba(115, 115, 115, 0.32);
-        font-weight: normal;
+        border-bottom: 1px solid rgba(115, 115, 115, 0.2);
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
         text-align: center;
         color: ${({ theme }) => theme.text};
         background-color: var(--table-bg-solid);
@@ -307,10 +316,15 @@ const Container = styled.div<ContainerProps>`
         display: table-row-group;
       }
       tr {
-        margin-bottom: 1em;
+        margin-bottom: 0.9em;
+        border-radius: 18px;
+        background: ${({ theme }) => theme.bg};
+        box-shadow: 0 10px 22px rgba(18, 47, 79, 0.06);
         @media (min-width: ${v.bpbart}) {
           display: table-row;
           border-width: 1px;
+          background: transparent;
+          box-shadow: none;
         }
         &:last-of-type {
           margin-bottom: 0;
@@ -333,11 +347,12 @@ const Container = styled.div<ContainerProps>`
         }
         &:nth-of-type(even) {
           @media (min-width: ${v.bpbart}) {
-            background-color: rgba(151, 151, 151, 0.12);
+            background-color: rgba(151, 151, 151, 0.08);
           }
         }
       }
       th[scope="row"] {
+        padding: 1rem 0.9rem 0.45rem;
         @media (min-width: ${v.bplisa}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         }
@@ -345,6 +360,7 @@ const Container = styled.div<ContainerProps>`
           background-color: transparent;
           text-align: center;
           color: ${({ theme }) => theme.text};
+          padding: 0.75em;
         }
       }
       .Colordiv {
@@ -358,6 +374,7 @@ const Container = styled.div<ContainerProps>`
         }
       }
       td {
+        padding: 0.55rem 0.9rem;
         text-align: right;
         @media (min-width: ${v.bpbart}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
@@ -371,7 +388,9 @@ const Container = styled.div<ContainerProps>`
       td[data-title]:before {
         content: attr(data-title);
         float: left;
-        font-size: 0.8em;
+        font-size: 0.78em;
+        font-weight: 700;
+        color: ${({ theme }) => theme.colorSubtitle};
         @media (min-width: ${v.bplisa}) {
           font-size: 0.9em;
         }
@@ -382,25 +401,9 @@ const Container = styled.div<ContainerProps>`
     }
   }
 `;
-interface ColorcontentProps {
-  $alto?: string;
-  $ancho?: string;
-  color?: string;
-}
-
 interface PagadoProps {
   $bgcolor: string;
 }
-
-const Colorcontent = styled.div<ColorcontentProps>`
-  justify-content: center;
-  min-height: ${(props) => props.$alto};
-  width: ${(props) => props.$ancho};
-  display: block;
-  background-color: ${(props) => props.color};
-  border-radius: 50%;
-  text-align: center;
-`;
 
 const Pagado = styled.div<PagadoProps>`
   display: flex;
@@ -416,12 +419,12 @@ const Pagado = styled.div<PagadoProps>`
 const FechaHeader = styled.div`
   font-weight: 700;
   font-size: 1em;
-  padding: 12px 8px;
+  padding: 14px 14px 10px;
   color: ${({ theme }) => theme.text};
   text-transform: capitalize;
   letter-spacing: 0.5px;
   background: ${({ theme }) =>
     `linear-gradient(135deg, ${theme.text}10 0%, ${theme.text}05 100%)`};
-  border-radius: 8px;
-  margin: 8px 0;
+  border-radius: 14px;
+  margin: 10px 12px;
 `;
