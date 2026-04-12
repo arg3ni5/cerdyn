@@ -94,7 +94,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
   }, [accion, dataSelect, setValue]);
 
   return (
-    <Container>
+    <Container role="dialog" aria-modal="true" aria-label="Formulario de cuenta">
       {estadoProceso && <Spinner />}
 
       <div className="sub-contenedor">
@@ -108,7 +108,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
           </section>
 
           <section>
-            <span onClick={onClose}>x</span>
+            <button type="button" onClick={onClose} aria-label="Cerrar formulario de cuenta">x</button>
           </section>
         </div>
 
@@ -157,7 +157,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
                 type="submit"
                 icono={<v.iconoguardar />}
                 titulo="Guardar"
-                bgcolor="#DAC1FF" // Consider using a color from variables 'v'
+                bgcolor="linear-gradient(135deg, #ffd667 0%, #ff9558 100%)"
               />
             </div>
           </section>
@@ -167,11 +167,11 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
   );
 }
 const Container = styled.div`
-  transition: 0.5s;
   top: 0;
   left: 0;
   position: fixed;
   background-color: rgba(10, 9, 9, 0.5);
+  backdrop-filter: blur(6px);
   display: flex;
   width: 100%;
   min-height: 100vh;
@@ -182,10 +182,10 @@ const Container = styled.div`
   .sub-contenedor {
     width: 500px;
     max-width: 85%;
-    border-radius: 20px;
+    border-radius: 28px;
     background: ${({ theme }) => theme.bgtotal};
-    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.4);
-    padding: 13px 36px 20px 36px;
+    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.3);
+    padding: 20px 36px 24px 36px;
     z-index: 100;
 
     .headers {
@@ -195,10 +195,17 @@ const Container = styled.div`
       margin-bottom: 20px;
 
       h1 {
-        font-size: 20px;
-        font-weight: 500;
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
       }
-      span {
+      button {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 999px;
+        background: ${({ theme }) => theme.bg3};
+        color: ${({ theme }) => theme.text};
         font-size: 20px;
         cursor: pointer;
       }
@@ -225,8 +232,9 @@ const ContentTitle = styled.div`
   input {
     border: none;
     outline: none;
-    background: transparent;
-    padding: 2px;
+    background: ${({ theme }) => theme.bg3};
+    border-radius: 12px;
+    padding: 8px;
     width: 40px;
     font-size: 28px;
     cursor: pointer;
@@ -237,83 +245,14 @@ const ContentTitle = styled.div`
   }
 `;
 const ContainerEmojiPicker = styled.div`
-  position: absolute; // Changed to absolute to overlay correctly
+  position: absolute;
   display: flex;
   justify-content: center;
   align-items: center;
-  top: 0; // Ensure it covers the whole screen or is positioned appropriately
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0,0,0,0.5); // Added a backdrop for better focus
-  z-index: 1001; // Ensure it's above the modal content
+  background-color: rgba(0,0,0,0.5);
+  z-index: 1001;
 `;
-
-// Make sure to export RegistrarCuentas from src/index.ts or wherever components are aggregated.
-// Also, ensure InputTextNumber is either an existing component or created.
-// If InputTextNumber does not exist, it can be a copy of InputText, but with type="number".
-// For example, a simple InputTextNumber could be:
-/*
-import { UseFormRegister, FieldErrors } from "react-hook-form";
-import styled from "styled-components";
-
-interface InputTextNumberProps {
-  label: string;
-  name: string;
-  register: UseFormRegister<any>;
-  errors: FieldErrors;
-  placeholder?: string;
-  defaultValue?: number;
-}
-
-export const InputTextNumber = ({ label, name, register, errors, placeholder, defaultValue }: InputTextNumberProps) => (
-  <InputContainer>
-    <LabelText>{label}</LabelText>
-    <StyledInput
-      type="number"
-      step="0.01" // For currency or precise numbers
-      defaultValue={defaultValue}
-      placeholder={placeholder}
-      {...register(name, { required: `${label} es requerido`, valueAsNumber: true })}
-    />
-    {errors[name] && <ErrorMessage>{errors[name]?.message?.toString()}</ErrorMessage>}
-  </InputContainer>
-);
-
-const InputContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-`;
-
-const LabelText = styled.label`
-  font-size: 0.9em;
-  color: ${({ theme }) => theme.text};
-`;
-
-const StyledInput = styled.input`
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid ${({ theme }) => theme.text}; // Use theme color for border
-  background-color: ${({ theme }) => theme.bg}; // Use theme background
-  color: ${({ theme }) => theme.text};
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.primary}; // Use a primary color for focus
-  }
-`;
-
-const ErrorMessage = styled.span`
-  color: red;
-  font-size: 0.8em;
-`;
-*/
-
-// Add the following to src/index.ts:
-// export * from "./components/organismos/formularios/RegistrarCuentas";
-
-// And if InputTextNumber was created as part of this subtask and is not already exported:
-// export * from "./components/atomos/InputTextNumber"; // Assuming it's placed in atomos
-// Or adjust the path according to where InputTextNumber is created/located.
-// For this subtask, I will assume InputTextNumber is already available or will be handled separately.
-// The primary goal is the RegistrarCuentas.tsx component.

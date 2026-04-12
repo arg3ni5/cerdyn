@@ -1,4 +1,4 @@
-import { Header, v, Btnfiltro, useOperaciones, Tipo, ContentFiltros, Btndesplegable, ListaMenuDesplegable, DataDesplegableCuenta, RegistrarCuentas, Cuenta, CuentaInsert, CuentaUpdate, Accion, showSuccessMessage, showErrorMessage } from "../../index";
+import { Header, v, useOperaciones, Tipo, Btndesplegable, ListaMenuDesplegable, DataDesplegableCuenta, RegistrarCuentas, Cuenta, CuentaInsert, CuentaUpdate, Accion, showSuccessMessage, showErrorMessage } from "../../index";
 import { useState } from "react";
 import { useUsuariosStore, useCuentaStore } from "../../index";
 import Swal from "sweetalert2";
@@ -76,6 +76,11 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 	};
 
 	const totalSaldos = data?.reduce((sum, cuenta) => sum + (cuenta.saldo_actual || 0), 0) || 0;
+  const tipoCuentaLabel = selectTipoCuenta.tipo === "efectivo" ? "Efectivo" : selectTipoCuenta.text;
+  const accountTypeDescription =
+    selectTipoCuenta.tipo === "efectivo"
+      ? "Revisá tus cuentas de efectivo y accesos rápidos para movimientos cotidianos."
+      : "Organizá tus cuentas por tipo para tener mejor control del saldo disponible.";
 
 	return (
 		<Container onClick={cerrarDesplegables}>
@@ -98,6 +103,21 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 				<Header stateConfig={{ state: state, setState: openUser }} />
 			</header>
 
+      <section className="hero">
+        <div className="hero-copy">
+          <span className="eyebrow">Cuentas</span>
+          <h1>{tipoCuentaLabel} con mejor visibilidad</h1>
+          <p>{accountTypeDescription}</p>
+        </div>
+
+        <div className="hero-side-card">
+          <span>Total de cuentas</span>
+          <strong>{data?.length || 0}</strong>
+          <small>{(data?.length || 0) === 1 ? "cuenta visible" : "cuentas visibles"}</small>
+          <div className="type-badge">{selectTipoCuenta.text}</div>
+        </div>
+      </section>
+
 			<section className="total-summary">
 				<div className="total-card">
 					<h2>Saldo Total</h2>
@@ -106,12 +126,15 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 			</section>
 
 			<section className="tipo">
-				<ContentFiltros>
-					<div
-						onClick={(e) => {
-							e.stopPropagation();
-						}}
-					>
+				<div
+          className="filter-card"
+					onClick={(e) => {
+						e.stopPropagation();
+					}}
+				>
+          <span className="toolbar-label">Tipo de cuenta</span>
+          <p className="toolbar-description">Cambiá entre los grupos disponibles para enfocarte en cada saldo.</p>
+          <ContentFiltro>
 						<Btndesplegable
 							textcolor={selectTipoCuenta.color}
 							bgcolor={selectTipoCuenta.bgcolor}
@@ -125,17 +148,26 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 								funcion={(p) => cambiarTipo(p as Tipo)}
 							/>
 						)}
-					</div>
-				</ContentFiltros>
+					</ContentFiltro>
+				</div>
 
-				<ContentFiltro>
-					<Btnfiltro
-						funcion={nuevoRegistro}
-						bgcolor={selectTipoCuenta.bgcolor}
-						textcolor={selectTipoCuenta.color}
-						icono={<v.agregar />}
-					/>
-				</ContentFiltro>
+				<div className="action-card">
+          <span className="toolbar-label">Nueva cuenta</span>
+          <p className="toolbar-description">Creá una cuenta con saldo inicial e ícono para ubicarla rápido.</p>
+          <button
+            type="button"
+            className="primary-action"
+            onClick={(e) => {
+              e.stopPropagation();
+              nuevoRegistro();
+            }}
+          >
+            <span className="icon">
+              <v.agregar />
+            </span>
+            <span>Agregar Cuenta</span>
+          </button>
+        </div>
 			</section>
 
 			<section className="main">
@@ -146,27 +178,39 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 								key={cuenta.id}
 								className="account-card"
 								onClick={() => setCuentaSeleccionada(cuenta)}
-								style={{ cursor: "pointer" }}
 							>
 								<div className="card-header">
-									<span className="icon">{cuenta.icono}</span>
-									<h3>{cuenta.descripcion}</h3>
+                  <div className="card-header-copy">
+									  <span className="icon">{cuenta.icono}</span>
+									  <div>
+                      <h3>{cuenta.descripcion}</h3>
+                      <small>{selectTipoCuenta.text}</small>
+                    </div>
+                  </div>
+                  <span className="open-indicator">Ver</span>
 								</div>
-								<p className="balance">{usuario?.moneda} {cuenta.saldo_actual?.toFixed(2)}</p>
+                <div className="card-body">
+								  <p className="balance">{usuario?.moneda} {cuenta.saldo_actual?.toFixed(2)}</p>
+                  <span className="balance-label">Saldo disponible</span>
+                </div>
 								<div className="card-actions">
 									<button
+                    type="button"
 										onClick={(e) => {
 											e.stopPropagation();
 											openEditModal(cuenta);
 										}}
+                    aria-label={`Editar cuenta ${cuenta.descripcion}`}
 									>
 										✏️
 									</button>
 									<button
+                    type="button"
 										onClick={(e) => {
 											e.stopPropagation();
 											handleDelete(cuenta.id);
 										}}
+                    aria-label={`Eliminar cuenta ${cuenta.descripcion}`}
 									>
 										🗑️
 									</button>
@@ -175,7 +219,12 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 						))}
 					</div>
 				) : (
-					<p>No hay cuentas registradas</p>
+					<div className="empty-state">
+            <div className="empty-card">
+              <h2>No hay cuentas registradas</h2>
+              <p>Creá tu primera cuenta para empezar a registrar movimientos y ver tu saldo total.</p>
+            </div>
+          </div>
 				)}
 			</section>
 		</Container>

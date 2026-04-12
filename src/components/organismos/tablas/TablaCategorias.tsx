@@ -29,7 +29,6 @@ export const TablaCategorias = ({
   setdataSelect,
   setAccion,
 }: TablaCategoriasProps) => {
-  // Add better data validation
   if (!data || !Array.isArray(data)) {
     return <Container>No hay datos disponibles</Container>;
   }
@@ -39,7 +38,7 @@ export const TablaCategorias = ({
   }
 
   const [pagina, setPagina] = useState<number>(1);
-  const [porPagina, setPorPagina] = useState<number>(10);
+  const [porPagina] = useState<number>(10);
 
   const mx = data.length / porPagina;
   const maximo = mx < 1 ? 1 : mx;
@@ -57,8 +56,6 @@ export const TablaCategorias = ({
       confirmButtonText: "Si, eliminar",
     }).then(async (result) => {
       if (result.isConfirmed && p.id && p.idusuario) {
-        console.log("Eliminando categoría...", p);
-
         await eliminarCategoria({ id: p.id, idusuario: p.idusuario } as CategoriaQueryParams);
       }
     });
@@ -71,68 +68,63 @@ export const TablaCategorias = ({
   };
 
   return (
-    <>
-      <Container>
-        <table className="responsive-table">
-          <thead>
-            <tr>
-              <th scope="col">Descripcion</th>
-              <th scope="col">Icono</th>
-              <th scope="col">Color</th>
-              <th scope="col">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data
-              .slice(
-                (pagina - 1) * porPagina,
-                (pagina - 1) * porPagina + porPagina
-              )
-              .map((item) => {
-                return (
-                  <tr key={item.id}>
-                    <th scope="row">{item.descripcion}</th>
-                    <td data-title="Icono">{item.icono}</td>
-                    <td data-title="Color" className="Colordiv">
-                      <div className="ColorContent">
-                        <Colorcontent
-                          color={item.color || ''}
-                          $alto="25px"
-                          $ancho="25px"
-                        />
-                      </div>
-                    </td>
-                    <td data-title="Acciones">
-                      <ContentAccionesTabla
-                        funcionEditar={() => editar(item)}
-                        funcionEliminar={() => eliminar(item)}
+    <Container>
+      <table className="responsive-table">
+        <thead>
+          <tr>
+            <th scope="col">Descripcion</th>
+            <th scope="col">Icono</th>
+            <th scope="col">Color</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data
+            .slice(
+              (pagina - 1) * porPagina,
+              (pagina - 1) * porPagina + porPagina
+            )
+            .map((item) => {
+              return (
+                <tr key={item.id}>
+                  <th scope="row">{item.descripcion}</th>
+                  <td data-title="Icono">{item.icono}</td>
+                  <td data-title="Color" className="Colordiv">
+                    <div className="ColorContent">
+                      <Colorcontent
+                        color={item.color || ""}
+                        $alto="25px"
+                        $ancho="25px"
                       />
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-        <Paginacion pagina={pagina} setPagina={setPagina} maximo={maximo} />
-      </Container>
-    </>
+                    </div>
+                  </td>
+                  <td data-title="Acciones">
+                    <ContentAccionesTabla
+                      funcionEditar={() => editar(item)}
+                      funcionEliminar={() => eliminar(item)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+      <Paginacion pagina={pagina} setPagina={setPagina} maximo={maximo} />
+    </Container>
   );
 }
 const Container = styled.div`
   position: relative;
-
-  margin: 5% 3%;
+  margin: 0;
+  padding: 22px;
   @media (min-width: ${v.bpbart}) {
-    margin: 2%;
-  }
-  @media (min-width: ${v.bphomer}) {
-    margin: 2em auto;
-    max-width: ${v.bphomer};
+    padding: 26px;
   }
   .responsive-table {
     width: 100%;
     margin-bottom: 1.5em;
     border-spacing: 0;
+    border-collapse: separate;
     @media (min-width: ${v.bpbart}) {
       font-size: 0.9em;
     }
@@ -154,10 +146,14 @@ const Container = styled.div`
         overflow: auto;
       }
       th {
-        border-bottom: 2px solid rgba(115, 115, 115, 0.32);
-        font-weight: normal;
+        border-bottom: 1px solid rgba(115, 115, 115, 0.18);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.78rem;
         text-align: center;
-        color: ${({ theme }) => theme.text};
+        color: ${({ theme }) => theme.colorSubtitle};
+        padding-bottom: 14px;
         &:first-of-type {
           text-align: center;
         }
@@ -175,11 +171,11 @@ const Container = styled.div`
     tr {
       @media (max-width: ${v.bpbart}) {
         background: ${({ theme }) => theme.bg};
-        border-radius: 12px;
+        border-radius: 20px;
         padding: 1.2rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        border: 1px solid rgba(151, 151, 151, 0.2);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(151, 151, 151, 0.14);
         display: grid;
         grid-template-areas:
           "icono desc"
@@ -227,25 +223,25 @@ const Container = styled.div`
         }
         &:nth-of-type(even) {
           @media (min-width: ${v.bpbart}) {
-            background-color: rgba(151, 151, 151, 0.12);
+            background-color: rgba(151, 151, 151, 0.08);
           }
         }
       }
       th[scope="row"] {
         @media (max-width: ${v.bpbart}) {
           grid-area: desc;
-          font-size: 1.2rem;
-          font-weight: 600;
+          font-size: 1.1rem;
+          font-weight: 700;
           padding: 0;
         }
         @media (min-width: ${v.bplisa}) {
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
+          border-bottom: 1px solid rgba(161, 161, 161, 0.18);
         }
         @media (min-width: ${v.bpbart}) {
           background-color: transparent;
           text-align: center;
           color: ${({ theme }) => theme.text};
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
+          border-bottom: 1px solid rgba(161, 161, 161, 0.18);
         }
       }
       .Colordiv {
@@ -280,7 +276,7 @@ const Container = styled.div`
           }
         }
         @media (min-width: ${v.bpbart}) {
-          border-bottom: 1px solid rgba(161, 161, 161, 0.32);
+          border-bottom: 1px solid rgba(161, 161, 161, 0.18);
           text-align: center;
         }
       }
@@ -312,4 +308,5 @@ const Colorcontent = styled.div<ColorContentProps>`
   background-color: ${(props) => props.color};
   border-radius: 50%;
   text-align: center;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.7);
 `;

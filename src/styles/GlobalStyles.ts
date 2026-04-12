@@ -10,6 +10,12 @@ export const GlobalStyles = createGlobalStyle`
         font-family: 'Inter', sans-serif;
         overscroll-behavior: none;
     }
+
+    html {
+        color-scheme: ${({ theme }) => (theme.body === "#202020" ? "dark" : "light")};
+        scroll-behavior: smooth;
+    }
+
     html, body {
         overscroll-behavior: none; /* Desactiva rebote visual */
     }
@@ -17,9 +23,29 @@ export const GlobalStyles = createGlobalStyle`
 
     body {
         overflow-x: hidden;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
     }
 
     * {
         box-sizing: border-box;
     }
+
+    *:focus-visible {
+        outline: 3px solid ${({ theme }) => theme.primary};
+        outline-offset: 3px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+        font: inherit;
+    }
+
+    // img {
+    //     max-width: 100%;
+    //     display: block;
+    // }
 `;
