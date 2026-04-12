@@ -106,7 +106,7 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
       <section className="hero">
         <div className="hero-copy">
           <span className="eyebrow">Cuentas</span>
-          <h1>{tipoCuentaLabel} con mejor visibilidad</h1>
+          <h1>{tipoCuentaLabel}</h1>
           <p>{accountTypeDescription}</p>
         </div>
 
