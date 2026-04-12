@@ -40,7 +40,6 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
     setColor(color.hex);
   }
 
-  // Add this interface for form data
   interface FormInputs {
     descripcion: string;
     color: string;
@@ -55,18 +54,6 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
     formState: { errors },
     handleSubmit,
   } = useForm<FormInputs>();
-
-  // Update InputText component to register all required fields
-  <InputText
-    defaultValue={dataSelect.descripcion || ""}
-    register={register}
-    name="descripcion"
-    placeholder="Descripcion"
-    errors={errors}
-    style={{ textTransform: "capitalize" }}
-  />
-
-  // Update the insertar function
   const insertar = async (formData: FormInputs): Promise<void> => {
     if (usuario?.id == undefined) {
       return;
@@ -91,7 +78,9 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
         await editarCategoria(updateData);
         setEstadoproceso(false);
         onClose();
-      } catch (error) {}
+      } catch (error) {
+        setEstadoproceso(false);
+      }
     } else {
       try {
         setEstadoproceso(true);
@@ -99,7 +88,7 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
         setEstadoproceso(false);
         onClose();
       } catch (error) {
-        alert("error ingresar Form");
+        setEstadoproceso(false);
       }
     }
   };
@@ -109,10 +98,10 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
       setEmojiselect(dataSelect.icono || "😻");
       setColor(dataSelect.color || '#F44336');
     }
-  }, []);
+  }, [accion, dataSelect.color, dataSelect.icono]);
 
   return (
-    <Container>
+    <Container role="dialog" aria-modal="true" aria-label="Formulario de categoría">
       {estadoProceso && <Spinner />}
 
       <div className="sub-contenedor">
