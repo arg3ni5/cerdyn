@@ -94,7 +94,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
   }, [accion, dataSelect, setValue]);
 
   return (
-    <Container>
+    <Container role="dialog" aria-modal="true" aria-label="Formulario de cuenta">
       {estadoProceso && <Spinner />}
 
       <div className="sub-contenedor">
@@ -108,7 +108,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
           </section>
 
           <section>
-            <span onClick={onClose}>x</span>
+            <button type="button" onClick={onClose} aria-label="Cerrar formulario de cuenta">x</button>
           </section>
         </div>
 
@@ -157,7 +157,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
                 type="submit"
                 icono={<v.iconoguardar />}
                 titulo="Guardar"
-                bgcolor="#DAC1FF" // Consider using a color from variables 'v'
+                bgcolor="linear-gradient(135deg, #ffd667 0%, #ff9558 100%)"
               />
             </div>
           </section>
@@ -167,11 +167,11 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
   );
 }
 const Container = styled.div`
-  transition: 0.5s;
   top: 0;
   left: 0;
   position: fixed;
   background-color: rgba(10, 9, 9, 0.5);
+  backdrop-filter: blur(6px);
   display: flex;
   width: 100%;
   min-height: 100vh;
@@ -182,10 +182,10 @@ const Container = styled.div`
   .sub-contenedor {
     width: 500px;
     max-width: 85%;
-    border-radius: 20px;
+    border-radius: 28px;
     background: ${({ theme }) => theme.bgtotal};
-    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.4);
-    padding: 13px 36px 20px 36px;
+    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.3);
+    padding: 20px 36px 24px 36px;
     z-index: 100;
 
     .headers {
@@ -195,10 +195,17 @@ const Container = styled.div`
       margin-bottom: 20px;
 
       h1 {
-        font-size: 20px;
-        font-weight: 500;
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
       }
-      span {
+      button {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 999px;
+        background: ${({ theme }) => theme.bg3};
+        color: ${({ theme }) => theme.text};
         font-size: 20px;
         cursor: pointer;
       }
@@ -225,8 +232,9 @@ const ContentTitle = styled.div`
   input {
     border: none;
     outline: none;
-    background: transparent;
-    padding: 2px;
+    background: ${({ theme }) => theme.bg3};
+    border-radius: 12px;
+    padding: 8px;
     width: 40px;
     font-size: 28px;
     cursor: pointer;
