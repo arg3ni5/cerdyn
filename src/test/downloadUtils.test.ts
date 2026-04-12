@@ -8,10 +8,12 @@ const mockClick = vi.fn();
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe('downloadBlob', () => {
   it('creates a temporary <a> element and triggers a click', () => {
+    vi.useFakeTimers();
     vi.stubGlobal('URL', {
       createObjectURL: mockCreateObjectURL,
       revokeObjectURL: mockRevokeObjectURL,
@@ -36,9 +38,13 @@ describe('downloadBlob', () => {
 
     expect(mockCreateObjectURL).toHaveBeenCalledWith(blob);
     expect(mockClick).toHaveBeenCalled();
-    expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
     expect(appendSpy).toHaveBeenCalled();
     expect(removeSpy).toHaveBeenCalled();
+
+    // revokeObjectURL is deferred via setTimeout — advance timers to trigger it
+    expect(mockRevokeObjectURL).not.toHaveBeenCalled();
+    vi.runAllTimers();
+    expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
   });
 });
 

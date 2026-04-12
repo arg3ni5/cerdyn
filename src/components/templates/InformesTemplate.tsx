@@ -4,6 +4,8 @@ import { JSX, useState } from "react";
 import { downloadJson } from "../../utils/export/downloadUtils";
 import { exportToExcel } from "../../utils/export/excelExport";
 import { exportToPdf } from "../../utils/export/pdfExport";
+import { logger } from "../../utils/logger";
+import { showErrorMessage } from "../../utils/sweetAlertUtils";
 export const InformesTemplate = (): JSX.Element => {
   const {
     setTipoMovimientos,
@@ -35,6 +37,23 @@ export const InformesTemplate = (): JSX.Element => {
     tipocategoria: tipo.tipo,
   });
 
+  /**
+   * Fetch movements for the current filter, ensuring only the types requested
+   * by the active tipocategoria are included (non-selected arrays are empty).
+   */
+  const fetchDataForExport = async () => {
+    const params = getParams();
+    const data = await mostrarMovimientos(params);
+    // Normalize: only include movement arrays that match the active filter so
+    // that stale arrays from a previous tipocategoria are not exported.
+    const tipoActivo = params.tipocategoria;
+    return {
+      i: tipoActivo === 'i' || tipoActivo === 'b' ? data.i : [],
+      g: tipoActivo === 'g' || tipoActivo === 'b' ? data.g : [],
+      t: tipoActivo === 't' ? data.t : [],
+    };
+  };
+
   const handleExportJson = async (): Promise<void> => {
     setExporting('json');
     try {
@@ -42,6 +61,9 @@ export const InformesTemplate = (): JSX.Element => {
       if (data) {
         downloadJson(data, `informe-${getPeriodo()}.json`);
       }
+    } catch (error) {
+      logger.error('Error al exportar JSON', { error });
+      showErrorMessage('No se pudo exportar el informe en formato JSON.');
     } finally {
       setExporting(null);
     }
@@ -50,8 +72,11 @@ export const InformesTemplate = (): JSX.Element => {
   const handleExportExcel = async (): Promise<void> => {
     setExporting('excel');
     try {
-      const data = await mostrarMovimientos(getParams());
+      const data = await fetchDataForExport();
       await exportToExcel(data, `informe-${getPeriodo()}.xlsx`);
+    } catch (error) {
+      logger.error('Error al exportar Excel', { error });
+      showErrorMessage('No se pudo exportar el informe en formato Excel.');
     } finally {
       setExporting(null);
     }
@@ -60,17 +85,22 @@ export const InformesTemplate = (): JSX.Element => {
   const handleExportPdf = async (): Promise<void> => {
     setExporting('pdf');
     try {
-      const data = await mostrarMovimientos(getParams());
+      const data = await fetchDataForExport();
       exportToPdf({
         titulo: `Informe ${tipo.text}`,
         periodo: getPeriodo(),
         data,
         filename: `informe-${getPeriodo()}.pdf`,
       });
+    } catch (error) {
+      logger.error('Error al exportar PDF', { error });
+      showErrorMessage('No se pudo exportar el informe en formato PDF.');
     } finally {
       setExporting(null);
     }
   };
+
+  const exportDisabled = exporting !== null || !idusuario;
 
   return (
     <Container>
@@ -106,7 +136,7 @@ export const InformesTemplate = (): JSX.Element => {
           <button
             className="export-btn json"
             onClick={() => { void handleExportJson(); }}
-            disabled={exporting !== null}
+            disabled={exportDisabled}
             title="Exportar JSON"
           >
             <v.iconocalculadora />
@@ -115,7 +145,7 @@ export const InformesTemplate = (): JSX.Element => {
           <button
             className="export-btn excel"
             onClick={() => { void handleExportExcel(); }}
-            disabled={exporting !== null}
+            disabled={exportDisabled}
             title="Exportar Excel"
           >
             <v.iconobarsh />
@@ -124,7 +154,7 @@ export const InformesTemplate = (): JSX.Element => {
           <button
             className="export-btn pdf"
             onClick={() => { void handleExportPdf(); }}
-            disabled={exporting !== null}
+            disabled={exportDisabled}
             title="Exportar PDF"
           >
             <v.iconopie />
