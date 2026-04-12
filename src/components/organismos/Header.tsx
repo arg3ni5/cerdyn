@@ -1,10 +1,9 @@
 import { ContentHeader, DataUser } from "../../index";
-import { MouseEventHandler } from "react";
 
 // Definir el tipo de props para Header
 interface StateConfig {
   state: boolean;
-  setState: MouseEventHandler<HTMLDivElement>;
+  setState: () => void;
 }
 
 interface HeaderProps {
@@ -14,13 +13,7 @@ interface HeaderProps {
 export const Header = ({ stateConfig }: HeaderProps) => {
   return (
     <ContentHeader>
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        <DataUser stateConfig={stateConfig} />
-      </div>
+      <DataUser stateConfig={stateConfig} />
     </ContentHeader>
   );
 }
