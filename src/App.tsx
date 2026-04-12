@@ -1,23 +1,18 @@
-// @barrel ignore
-import {
-  MyRoutes,
-  Sidebar,
-  Device,
-  Light,
-  Dark,
-  AuthContextProvider,
-  Menuambur,
-  useUsuariosStore,
-  Login,
-  SpinnerLoader,
-  Usuario,
-} from "./index";
+import { createContext, JSX, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { createContext, JSX, useEffect, useState } from "react";
 import { ThemeProvider, styled } from "styled-components";
 import { useQuery } from "@tanstack/react-query";
+import { MyRoutes } from "./routers/routes";
+import { Sidebar } from "./components/organismos/sidebar/Sidebar";
+import { Menuambur } from "./components/organismos/Menuambur";
+import { AuthContextProvider } from "./context/AuthContent";
 import { LoadingProvider } from "./context/LoadingContext";
+import { useUsuariosStore } from "./store/UsuariosStore";
+import { SpinnerLoader } from "./components/moleculas/SpinnerLoader";
 import { GlobalStyles } from "./styles/GlobalStyles";
+import { Dark, Light } from "./styles/themes";
+import { Device } from "./styles/breakpoints";
+import type { Usuario } from "./supabase/crudUsuarios";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 type ThemeContextType = typeof Light;
@@ -29,6 +24,7 @@ function App(): JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const isPublicRoute = pathname === "/login" || pathname === "/auth/callback";
 
   const {
     data: usuario,
@@ -38,7 +34,7 @@ function App(): JSX.Element {
   } = useQuery<Usuario, Error>({
     queryKey: ["usuarioActual"],
     queryFn: ObtenerUsuarioActual,
-    enabled: pathname !== "/login",
+    enabled: !isPublicRoute,
     retry: 1,
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000, // Cache usuario por 5 minutos
@@ -49,17 +45,19 @@ function App(): JSX.Element {
       setUsuario(usuario);
     }
 
-    if (error && fetchStatus !== "fetching" && pathname !== "/login") {
+    if (error && fetchStatus !== "fetching" && !isPublicRoute) {
       clearUsuario();
       navigate("/login");
     }
-  }, [usuario, error, fetchStatus, pathname, setUsuario, clearUsuario, navigate]);
+  }, [usuario, error, fetchStatus, isPublicRoute, setUsuario, clearUsuario, navigate]);
 
-  if (pathname !== "/login" && isLoading) return <SpinnerLoader />;
-  if (error) console.log(error);
+  const themeStyle = useMemo(() => {
+    const themeName = usuario?.tema === "0" ? "light" : "dark";
+    return themeName === "light" ? Light : Dark;
+  }, [usuario?.tema]);
 
-  const themeName = usuario?.tema === "0" ? "light" : "dark";
-  const themeStyle = themeName === "light" ? Light : Dark;
+  if (!isPublicRoute && isLoading) return <SpinnerLoader />;
+
 
   return (
     <ErrorBoundary>
@@ -68,7 +66,7 @@ function App(): JSX.Element {
           <ThemeProvider theme={themeStyle}>
             <GlobalStyles />
             <AuthContextProvider>
-              {pathname !== "/login" ? (
+              {!isPublicRoute ? (
                 <Container className={sidebarOpen ? "active" : ""}>
                   <div className="ContentSidebar">
                     <Sidebar
@@ -86,7 +84,7 @@ function App(): JSX.Element {
                   </Containerbody>
                 </Container>
               ) : (
-                <Login />
+                <MyRoutes isLoading={isLoading} />
               )}
             </AuthContextProvider>
           </ThemeProvider>
@@ -101,7 +99,7 @@ const Container = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   background: ${({ theme }) => theme.bgtotal};
-  transition: all 0.2s ease-in-out;
+  transition: grid-template-columns 0.2s ease-in-out, background-color 0.2s ease-in-out;
 
   .ContentSidebar {
     display: none;

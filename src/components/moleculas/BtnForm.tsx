@@ -56,6 +56,7 @@ const Container = styled.button<StyledButtonProps>`
   background-color: initial;
   z-index: 2;
   cursor: pointer;
+  touch-action: manipulation;
 
   .btn {
     background: ${(props) => props.$bgcolor};
@@ -65,9 +66,12 @@ const Container = styled.button<StyledButtonProps>`
     border: 3px solid black;
     border-radius: 0.4em;
     box-shadow: 0.1em 0.1em #000;
-    transition: 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
     color: #000;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 
     .icon {
       position: relative;
@@ -82,11 +86,16 @@ const Container = styled.button<StyledButtonProps>`
     &:hover {
       transform: translate(-0.05em, -0.05em);
       box-shadow: 0.15em 0.15em #000;
+      filter: brightness(1.03);
     }
 
     &:active {
       transform: translate(0.05em, 0.05em);
       box-shadow: 0.05em 0.05em #000;
     }
+  }
+
+  &:focus-visible .btn {
+    box-shadow: 0 0 0 4px rgba(52, 131, 235, 0.25), 0.1em 0.1em #000;
   }
 `;

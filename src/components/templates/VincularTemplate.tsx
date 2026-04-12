@@ -1,38 +1,50 @@
 import styled from "styled-components";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Header, supabase, useConexionesStore, useUsuariosStore } from "../../index";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-interface Conexion {
-  canal: string;
-  canal_user_id: string;
-  canal_username: string;
-  usuario_id: string;
-}
+type LinkStatus = "loading" | "no-session" | "success" | "already" | "error";
 
 export const VincularTemplate: React.FC = () => {
   const { usuario } = useUsuariosStore();
   const { conexiones, insertarConexion, mostrarConexiones } = useConexionesStore();
-  const [status, setStatus] = useState<'loading' | 'no-session' | 'success' | 'already' | 'error'>('loading');
-  const [msgError, setMsgError] = useState<string>('');
+  const [status, setStatus] = useState<LinkStatus>("loading");
+  const [msgError, setMsgError] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const canal = urlParams.get('canal') || 'telegram';
-  const canal_user_id = urlParams.get('id');
-  const canal_username = urlParams.get('username') || '';
+  const canal = searchParams.get("canal") || "telegram";
+  const canalUserId = searchParams.get("id");
+  const canalUsername = searchParams.get("username") || "";
 
-  const { isLoading, error } = useQuery({
-    queryKey: ['mostrar conexiones', usuario?.id],
-    queryFn: () => {
+  useQuery({
+    queryKey: ["mostrar conexiones", usuario?.id],
+    queryFn: async () => {
       if (!usuario?.id) {
-        throw new Error('User ID is required');
+        throw new Error("User ID is required");
       }
-      return mostrarConexiones({ usuario_id: usuario.id });
+
+      return await mostrarConexiones({ idusuario: usuario.id });
     },
-    enabled: !!usuario,
+    enabled: !!usuario?.id,
   });
+
+  const statusMessage = useMemo(() => {
+    switch (status) {
+      case "loading":
+        return "Verificando tu sesión…";
+      case "no-session":
+        return "Iniciá sesión para vincular tu cuenta.";
+      case "success":
+        return "La cuenta se vinculó correctamente.";
+      case "already":
+        return `La cuenta de ${canal} ya estaba vinculada.`;
+      case "error":
+      default:
+        return "No pudimos completar la vinculación.";
+    }
+  }, [canal, status]);
 
   useEffect(() => {
     const vincular = async () => {
@@ -44,88 +56,89 @@ export const VincularTemplate: React.FC = () => {
         return;
       }
 
-      if(usuario?.id === undefined) {
+      if (usuario?.id === undefined) {
         setStatus("error");
         setMsgError("No se encontró el ID de usuario.");
         return;
       }
 
-      if (!canal_user_id) {
+      if (!canalUserId) {
         setStatus("error");
-        setMsgError("No se encontró el ID de usuario de Telegram.");
+        setMsgError("No se encontró el identificador del canal que querés vincular.");
         return;
       }
 
-      if (!conexiones) return; // espera a que estén las conexiones
+      if (!conexiones) return;
 
-      const p = {
-        usuario_id: usuario.id,
-        canal,
-        canal_user_id,
-        canal_username,
-      };
+      const yaVinculado = conexiones.some(
+        (conexion) => conexion.canal === canal && conexion.canal_user_id === canalUserId
+      );
 
-      const yaVinculado = conexiones.some((c) => c.canal_user_id === canal_user_id);
       if (yaVinculado) {
         setStatus("already");
         return;
       }
-      try {
-        const data = await insertarConexion(p);
-        console.log("data", data);
 
+      try {
+        await insertarConexion({
+          idusuario: usuario.id,
+          canal,
+          canal_user_id: canalUserId,
+          canal_username: canalUsername,
+        });
         setStatus("success");
       } catch (err) {
-        console.log("error", err);
-
-        if (err instanceof Error && err.message.includes("duplicate")) {
+        if (err instanceof Error && err.message.toLowerCase().includes("duplicate")) {
           setStatus("already");
         } else {
           setStatus("error");
+          setMsgError("Revisá el enlace de vinculación y volvé a intentarlo.");
         }
       }
     };
 
-    if (!isLoading && !error && usuario?.id) {
-      vincular();
+    if (usuario?.id) {
+      void vincular();
     }
-  }, [isLoading, error, conexiones, usuario, canal_user_id]);
+  }, [canal, canalUserId, canalUsername, conexiones, insertarConexion, usuario?.id]);
 
   return (
     <Container>
       <header className="header">
         <Header stateConfig={{ state: false, setState: () => {} }} />
       </header>
-      <section className="area2">
-        {status === "loading" && <p>🔄 Verificando tu sesión...</p>}
-        {status === "no-session" && <p>🔒 Iniciá sesión para vincular tu cuenta.</p>}
-        {status === "success" && <p>✅ ¡Tu cuenta fue vinculada exitosamente!</p>}
-        {status === "already" && <p>⚠️ Esta cuenta de {canal} ya está vinculada.</p>}
-        {status === "error" && <p>❌ Ocurrió un error al vincular tu cuenta.</p>}
-      </section>
-      <section className="area1">
-        {(status === "success" || status === "already") && <IrAConexiones onClick={() => navigate("/conexiones")}>🔗 Ver mis cuentas vinculadas</IrAConexiones>}
 
-        {msgError && <p>{msgError}</p>}
-      </section>
-      <section className="main">
-        {conexiones && conexiones?.length > 0 && (
-          <ListaCuentas>
-            <h3>Cuentas vinculadas</h3>
-            <ul>
-              {conexiones.map((conexion) => (
-                <li key={conexion.canal + conexion.canal_user_id}>
-                  <span className="icono">🔗</span>
-                  <strong>{conexion.canal}</strong> – @{conexion.canal_username || "sin username"} (ID: {conexion.canal_user_id})
-                </li>
-              ))}
-            </ul>
-          </ListaCuentas>
+      <MainCard>
+        <Eyebrow>Vincular Canal</Eyebrow>
+        <h1>{status === "success" ? "Todo Listo" : "Estado De Vinculación"}</h1>
+        <StatusPill data-status={status}>{statusMessage}</StatusPill>
+
+        {(status === "success" || status === "already") && (
+          <PrimaryAction type="button" onClick={() => navigate("/conexiones")}>
+            Ver Mis Cuentas Vinculadas
+          </PrimaryAction>
         )}
-      </section>
+
+        {msgError && <ErrorText role="alert">{msgError}</ErrorText>}
+      </MainCard>
+
+      {conexiones && conexiones.length > 0 && (
+        <ConnectionsPanel>
+          <h2>Canales Actuales</h2>
+          <CardsList>
+            {conexiones.map((conexion) => (
+              <ConnectionCard key={`${conexion.canal}-${conexion.canal_user_id}`}>
+                <strong>{conexion.canal}</strong>
+                <span>@{conexion.canal_username || "sin username"}</span>
+                <small>ID: {conexion.canal_user_id}</small>
+              </ConnectionCard>
+            ))}
+          </CardsList>
+        </ConnectionsPanel>
+      )}
     </Container>
   );
-}
+};
 
 const Container = styled.div`
   min-height: 100vh;
@@ -134,98 +147,123 @@ const Container = styled.div`
   background: ${({ theme }) => theme.bgtotal};
   color: ${({ theme }) => theme.text};
   display: grid;
+  gap: 24px;
   grid-template:
-    "header" 100px
-    "area1" 100px
-    "area2" 70px
-    "main" auto;
+    "header" auto
+    "main" auto
+    "panel" 1fr;
 
   .header {
     grid-area: header;
-    //  background-color: rgba(103, 93, 241, 0.14);
     display: flex;
     align-items: center;
-  }
-  .area1 {
-    grid-area: area1;
-    //  background-color: rgba(229, 67, 26, 0.14);
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
-  .area2 {
-    grid-area: area2;
-    // background-color: rgba(77, 237, 106, 0.14);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-bottom: 20px;
-  }
-  .main {
-    grid-area: main;
-    // background-color: rgba(179, 46, 241, 0.14);
   }
 `;
-const Titulo = styled.span`
-  font-size: 5rem;
+
+const MainCard = styled.section`
+  grid-area: main;
+  padding: 28px;
+  border-radius: 28px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.92), rgba(191, 222, 255, 0.72));
+  color: #172335;
+  box-shadow: 0 20px 40px rgba(45, 98, 166, 0.12);
+  display: grid;
+  gap: 14px;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 0.96;
+    text-wrap: balance;
+  }
+`;
+
+const Eyebrow = styled.span`
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #47627f;
+`;
+
+const StatusPill = styled.div`
+  width: fit-content;
+  padding: 12px 16px;
+  border-radius: 999px;
   font-weight: 700;
-`;
-const ContainerBtn = styled.div`
-  display: flex;
-  justify-content: center;
-`;
-const ListaCuentas = styled.div`
-  padding: 1rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  margin-top: 1rem;
 
-  h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid ${({ theme }) => theme.text};
-    padding-bottom: 0.3rem;
+  &[data-status="loading"] {
+    background: rgba(58, 141, 255, 0.12);
+    color: #2160a7;
   }
 
-  ul {
-    list-style: none;
-    padding: 0;
+  &[data-status="success"] {
+    background: rgba(37, 168, 110, 0.14);
+    color: #0f7d4a;
   }
 
-  li {
-    margin: 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  &[data-status="already"] {
+    background: rgba(255, 179, 71, 0.22);
+    color: #a86409;
   }
 
-  .icono {
-    font-size: 1.3rem;
-  }
-
-  .btn-eliminar {
-    margin-left: auto;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.1rem;
-    color: tomato;
-
-    &:hover {
-      color: red;
-    }
+  &[data-status="error"],
+  &[data-status="no-session"] {
+    background: rgba(228, 76, 76, 0.14);
+    color: #a22828;
   }
 `;
-const IrAConexiones = styled.button`
-  margin-top: 10px;
-  background: transparent;
+
+const PrimaryAction = styled.button`
+  width: fit-content;
   border: none;
-  color: ${({ theme }) => theme.primary || "#4fa3f7"};
+  border-radius: 999px;
+  padding: 13px 18px;
+  background: #172335;
+  color: #f7f7f7;
+  font-weight: 800;
   cursor: pointer;
-  font-size: 1rem;
-  text-decoration: underline;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.text};
+    transform: translateY(-1px);
+    background: #0f1826;
+  }
+`;
+
+const ErrorText = styled.p`
+  margin: 0;
+  color: #a22828;
+`;
+
+const ConnectionsPanel = styled.section`
+  grid-area: panel;
+  padding: 24px;
+  border-radius: 28px;
+  background: ${({ theme }) => theme.bg3};
+  box-shadow: 0 18px 36px rgba(18, 47, 79, 0.08);
+
+  h2 {
+    margin-top: 0;
+  }
+`;
+
+const CardsList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+`;
+
+const ConnectionCard = styled.article`
+  padding: 18px;
+  border-radius: 22px;
+  background: ${({ theme }) => theme.bgAlpha};
+  display: grid;
+  gap: 6px;
+
+  span,
+  small {
+    color: ${({ theme }) => theme.colorSubtitle};
+    overflow-wrap: anywhere;
   }
 `;

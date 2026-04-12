@@ -20,13 +20,18 @@ interface StyledProps {
 export const Sidebar = ({ state, setState }: SidebarProps): JSX.Element => {
   return (
     <Main $isopen={state.toString()}>
-      <span className="Sidebarbutton" onClick={() => setState(!state)}>
+      <button
+        type="button"
+        className="Sidebarbutton"
+        onClick={() => setState(!state)}
+        aria-label={state ? "Contraer barra lateral" : "Expandir barra lateral"}
+      >
         {<v.iconoflechaderecha />}
-      </span>
+      </button>
       <Container $isopen={state.toString()} className={state ? "active" : ""}>
         <div className="Logocontent">
           <div className="imgcontent">
-            <img src={v.logo} />
+            <img src={v.logo} alt="Logo de Cerdyn" width="30" height="30" />
           </div>
           <h2>Cerdyn</h2>
         </div>
@@ -79,7 +84,7 @@ const Container = styled.div<StyledProps>`
   z-index: 1;
   height: 100%;
   width: 65px;
-  transition: 0.1s ease-in-out;
+  transition: width 0.1s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   overflow-y: auto;
   overflow-x: hidden;
   &::-webkit-scrollbar {
@@ -105,7 +110,7 @@ const Container = styled.div<StyledProps>`
       align-items: center;
       width: 30px;
       cursor: pointer;
-      transition: 0.3s ease;
+      transition: transform 0.3s ease;
       transform: ${({ $isopen }) => ($isopen === "true" ? `scale(0.7)` : `scale(1.5)`)}
         rotate(${({ theme }) => theme.logorotate});
       img {
@@ -130,7 +135,7 @@ const Container = styled.div<StyledProps>`
   }
   .LinkContainer {
     margin: 5px 0;
-    transition: all 0.3s ease-in-out;
+    transition: background-color 0.3s ease-in-out, padding 0.3s ease-in-out;
     padding: 0 5%;
     position: relative;
     &:hover {
@@ -151,7 +156,7 @@ const Container = styled.div<StyledProps>`
         }
       }
       .label_ver {
-        transition: 0.3s ease-in-out;
+        transition: opacity 0.3s ease-in-out;
         opacity: 1;
       }
       .label_oculto {
@@ -191,11 +196,12 @@ const Main = styled.div<StyledProps>`
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     z-index: 2;
     transform: ${({ $isopen }) =>
     $isopen === "true" ? `translateX(162px) rotate(3.142rad)` : `initial`};
     color: ${(props) => props.theme.text};
+    border: none;
   }
 `;
 const Divider = styled.div`
