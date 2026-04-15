@@ -11,13 +11,13 @@ import { useQuery } from "@tanstack/react-query";
 
 export const Movimientos = () => {
   const { selectTipoMovimiento: tipo, date } = useOperaciones();
-  const { mostrarMovimientos } = useMovimientosStore();
+  const { mostrarMovimientos, setDatamovimientos, setFiltros } = useMovimientosStore();
   const { usuario } = useUsuariosStore();
   const { setIsLoading } = useLoading();
   const isDev = import.meta.env.DEV;
 
   // Cargar movimientos
-  const { isLoading, error } = useQuery<DataMovimientos, Error>({
+  const { isLoading, error, data } = useQuery<DataMovimientos, Error>({
     queryKey: ["mostrar movimientos", date, tipo, usuario?.id],
     queryFn: () =>
       mostrarMovimientos({
@@ -39,6 +39,17 @@ export const Movimientos = () => {
   useEffect(() => {
     setIsLoading(isLoading);
   }, [isLoading, setIsLoading]);
+
+  useEffect(() => {
+    if (data) {
+      setDatamovimientos(data);
+    }
+  }, [data, setDatamovimientos]);
+
+  // Limpiar filtros al cambiar de mes/año
+  useEffect(() => {
+    setFiltros("", "");
+  }, [date, setFiltros]);
 
   if (error) {
     return <h1>Error: {error.message}</h1>;

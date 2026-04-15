@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { v, useUsuariosStore, BtnCircular } from "../../index";
+import { useUsuariosStore, BtnCircular } from "../../index";
 import { JSX } from "react";
 
 interface CardTotalesProps {
@@ -19,11 +19,10 @@ export const CardTotales = ({ color, total, title, icono }: CardTotalesProps): J
   };
 
   return (
-    <Container>
+    <Container $accent={color}>
       <div className="contentTextos">
         <section>
           <span className="title">{title}</span>
-          <b>{<v.iconoFlechabajo />}</b>
         </section>
         <span className="total">
           {usuario?.moneda} {formatearTotal(total)}
@@ -45,23 +44,42 @@ export const CardTotales = ({ color, total, title, icono }: CardTotalesProps): J
   );
 };
 
-const Container = styled.div`
+const Container = styled.div<{ $accent: string }>`
   display: flex;
   align-items: center;
-  background-color: ${({ theme }) => theme.bg};
-  border-radius: 25px;
-  padding: 20px;
+  background:
+    linear-gradient(180deg, ${({ theme }) => theme.bg3}, ${({ theme }) => theme.bg});
+  border-radius: 26px;
+  padding: 22px;
   width: 100%;
   justify-content: space-between;
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(151, 151, 151, 0.12);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: ${({ $accent }) => $accent};
+  }
+
   .contentTextos {
     display: flex;
     flex-direction: column;
+    gap: 6px;
     .title {
-      font-size: 14px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: ${({ theme }) => theme.colorSubtitle};
     }
     .total {
-      font-size: 22px;
-      font-weight: 500;
+      font-size: clamp(1.45rem, 3vw, 1.8rem);
+      font-weight: 700;
     }
     section{
       display:flex;

@@ -77,6 +77,13 @@ export const DataDesplegableMovimientos = [
     bgcolor: v.colorbgBalance,
     icono: "📊"
   },
+  {
+    text: "Transferencias",
+    color: v.colorTransferencias,
+    tipo: "t",
+    bgcolor: v.colorbgTransferencias,
+    icono: "💸"
+  },
 ];
 export const DataDesplegables = {
   movimientos : Object.fromEntries(
@@ -96,6 +103,7 @@ const titulosPorTipo = {
   g: "Gastos",
   i: "Ingresos",
   b: "Balance",
+  t: "Transferencias",
 } as const;
 
 export const obtenerTitulo = (tipo: keyof typeof titulosPorTipo, estado: "pendientes" | "pagados") => {

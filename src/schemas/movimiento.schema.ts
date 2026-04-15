@@ -9,9 +9,11 @@ export const movimientoSchema = z.object({
   fecha: z.string().nullable(),
   estado: z.boolean().nullable(),
   idcategoria: z.number().int().positive().nullable(),
-  idcuenta: z.number().int().positive().nullable()
+  idcuenta: z.number().int().positive().nullable(),
+  idcuenta_origen: z.number().int().positive().nullable().optional(),
+  idcuenta_destino: z.number().int().positive().nullable().optional(),
 });
-const tipoEnum = ['i', 'g'] as const;
+const tipoEnum = ['i', 'g', 't'] as const;
 // Schema for inserting a new Movimiento
 export const movimientoInsertSchema = z.object({
   descripcion: z.string().min(1, 'La descripción es requerida').max(200, 'La descripción no puede exceder 200 caracteres').nullable().optional(),
@@ -27,7 +29,21 @@ export const movimientoInsertSchema = z.object({
     .optional(),
   estado: z.boolean(),
   idcategoria: z.number().int().positive('El ID de categoría debe ser un número positivo').nullable().optional(),
-  idcuenta: z.number().int().positive('El ID de cuenta debe ser un número positivo').nullable().optional()
+  idcuenta: z.number().int().positive('El ID de cuenta debe ser un número positivo').nullable().optional(),
+  idcuenta_origen: z.number().int().positive('El ID de cuenta origen debe ser un número positivo').nullable().optional(),
+  idcuenta_destino: z.number().int().positive('El ID de cuenta destino debe ser un número positivo').nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (data.tipo === 't') {
+    if (!data.idcuenta_origen) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La cuenta origen es requerida para transferencias', path: ['idcuenta_origen'] });
+    }
+    if (!data.idcuenta_destino) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La cuenta destino es requerida para transferencias', path: ['idcuenta_destino'] });
+    }
+    if (data.idcuenta_origen && data.idcuenta_destino && data.idcuenta_origen === data.idcuenta_destino) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La cuenta origen y destino deben ser diferentes', path: ['idcuenta_destino'] });
+    }
+  }
 });
 
 // Schema for updating a Movimiento
@@ -45,7 +61,9 @@ export const movimientoUpdateSchema = z.object({
     .optional(),
   estado: z.boolean().optional(),
   idcategoria: z.number().int().positive().nullable().optional(),
-  idcuenta: z.number().int().positive().nullable().optional()
+  idcuenta: z.number().int().positive().nullable().optional(),
+  idcuenta_origen: z.number().int().positive().nullable().optional(),
+  idcuenta_destino: z.number().int().positive().nullable().optional(),
 });
 
 // Type exports

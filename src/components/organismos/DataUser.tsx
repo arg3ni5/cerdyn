@@ -7,12 +7,11 @@ import {
   useAuthStore,
   useUserAuth,
 } from "../../index";
-import { MouseEventHandler } from "react";
 
 // Tipar el estado de visibilidad del menú
 interface StateConfig {
   state: boolean;
-  setState: MouseEventHandler<HTMLDivElement>;
+  setState: () => void;
 }
 
 // Tipar el tipo esperado por la función del menú
@@ -32,9 +31,15 @@ export const DataUser = ({ stateConfig }: { stateConfig: StateConfig }) => {
   };
 
   return (
-    <Container onClick={stateConfig.setState}>
+    <Container
+      type="button"
+      onClick={stateConfig.setState}
+      aria-haspopup="menu"
+      aria-expanded={stateConfig.state}
+      aria-label="Abrir menú de usuario"
+    >
       <div className="imgContainer">
-        <img src={user?.picture} alt="Foto de perfil" />
+        <img src={user?.picture} alt="Foto de perfil" width="40" height="40" />
       </div>
 
       <BtnCircular
@@ -60,7 +65,7 @@ export const DataUser = ({ stateConfig }: { stateConfig: StateConfig }) => {
   );
 }
 
-const Container = styled.div`
+const Container = styled.button`
   position: relative;
   top: 0;
   right: 0;
@@ -72,6 +77,8 @@ const Container = styled.div`
   border-radius: 50px;
   margin: 15px;
   cursor: pointer;
+  border: none;
+  background: transparent;
   .imgContainer {
     height: 40px;
     width: 40px;

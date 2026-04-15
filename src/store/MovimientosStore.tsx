@@ -23,6 +23,7 @@ import {
   ModoRecurrencia,
   PoliticaInicioMensual,
 } from "../utils/recurrencia";
+import { esPagado, calcularTotalesBalance } from "../utils/totalesUtils";
 
 export interface ConfigRecurrencia {
   modo: ModoRecurrencia;
@@ -39,6 +40,7 @@ export interface DataRptMovimientosAñoMes {
 export interface DataMovimientos {
   i: MovimientosMesAnio;
   g: MovimientosMesAnio;
+  t: MovimientosMesAnio;
 }
 interface MovimientosState {
   datamovimientos: DataMovimientos;
@@ -47,8 +49,14 @@ interface MovimientosState {
   totalMesAño: number;
   totalMesAñoPagados: number;
   totalMesAñoPendientes: number;
+  ingresosPagadosMes: number;
+  gastosPagadosMes: number;
+  filtroDescripcion: string;
+  filtroCategoria: string;
   parametros: MovimientosMesAnioParams;
+  setFiltros: (descripcion: string, categoria: string) => void;
   mostrarMovimientos: (p: MovimientosMesAnioParams) => Promise<DataMovimientos>;
+  setDatamovimientos: (data: DataMovimientos) => void;
   calcularTotales: (data: DataMovimientos) => void;
   insertarMovimientos: (p: MovimientoInsert) => Promise<void>;
   actualizarMovimientos: (p: MovimientoUpdate) => Promise<void>;
@@ -59,16 +67,6 @@ interface MovimientosState {
   insertarMovimientosRecurrentes: (base: MovimientoInsert, config: ConfigRecurrencia) => Promise<void>;
 }
 
-const esPagado = (estado: unknown): boolean => {
-  if (typeof estado === "boolean") return estado;
-  if (typeof estado === "number") return estado === 1;
-  if (typeof estado === "string") {
-    const valor = estado.trim().toLowerCase();
-    return valor === "1" || valor === "true";
-  }
-  return false;
-};
-
 export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
   rptParams: {} as RptMovimientosMesAnioParams,
   datamovimientos: {} as DataMovimientos,
@@ -76,7 +74,15 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
   totalMesAño: 0,
   totalMesAñoPagados: 0,
   totalMesAñoPendientes: 0,
+  ingresosPagadosMes: 0,
+  gastosPagadosMes: 0,
+  filtroDescripcion: "",
+  filtroCategoria: "",
   parametros: {} as MovimientosMesAnioParams,
+
+  setFiltros: (descripcion: string, categoria: string) => {
+    set({ filtroDescripcion: descripcion, filtroCategoria: categoria });
+  },
 
   mostrarMovimientos: async (p: MovimientosMesAnioParams) => {
     try {
@@ -87,6 +93,8 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "i" }) || [] : currentState.datamovimientos.i || [];
       let g = p.tipocategoria === "g" || p.tipocategoria === "b" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "g" }) || [] : currentState.datamovimientos.g || [];
+      let t = p.tipocategoria === "t" || p.tipocategoria === "b" ?
+        await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "t" }) || [] : currentState.datamovimientos.t || [];
 
       // Convertir estado a booleano
       i = i?.map(item => ({
@@ -99,20 +107,26 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
         estado: esPagado(item.estado)
       })) || [];
 
-      const response = { i, g };
+      t = t?.map(item => ({
+        ...item,
+        estado: esPagado(item.estado)
+      })) || [];
 
-      const { calcularTotales } = get();
-      if (response) calcularTotales(response);
-      set({ datamovimientos: { i: i || [], g: g || [] } });
-      logger.debug('Movimientos cargados exitosamente', {
-        ingresos: i?.length || 0,
-        gastos: g?.length || 0
-      });
+      const response = { i, g, t };
+
+      const { setDatamovimientos } = get();
+      setDatamovimientos(response);
       return response;
     } catch (error) {
       logger.error('Error al mostrar movimientos en store', { error, params: p });
-      return { i: [], g: [] };
+      return { i: [], g: [], t: [] };
     }
+  },
+
+  setDatamovimientos: (data: DataMovimientos) => {
+    const { calcularTotales } = get();
+    set({ datamovimientos: data });
+    calcularTotales(data);
   },
 
   calcularTotales: (data: DataMovimientos): void => {
@@ -120,28 +134,27 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
       const { parametros } = get();
 
       if (parametros.tipocategoria === "b") {
-        const totalIngresos = data.i?.reduce((sum, item) => sum + Number(item.valor), 0) || 0;
-        const totalGastos = data.g?.reduce((sum, item) => sum + Number(item.valor), 0) || 0;
+        // Balance: only ingresos and gastos, transfers don't affect the balance total
+        const totales = calcularTotalesBalance(data.i || [], data.g || []);
 
-        const ingPagados = data.i?.filter(item => esPagado(item.estado))
-          .reduce((sum, item) => sum + Number(item.valor), 0) || 0;
-        const gasPagados = data.g?.filter(item => esPagado(item.estado))
-          .reduce((sum, item) => sum + Number(item.valor), 0) || 0;
+        logger.debug('Totales calculados (ambos)', totales);
 
-        const ingPendientes = data.i?.filter(item => !esPagado(item.estado))
-          .reduce((sum, item) => sum + Number(item.valor), 0) || 0;
-        const gasPendientes = data.g?.filter(item => !esPagado(item.estado))
-          .reduce((sum, item) => sum + Number(item.valor), 0) || 0;
+        set(totales);
+        return;
+      }
 
-        logger.debug('Totales calculados (ambos)', {
-          totalIngresos, totalGastos, ingPagados, gasPagados, ingPendientes, gasPendientes
-        });
+      if (parametros.tipocategoria === "t") {
+        // Transfers: show total amount transferred (informational, no sign)
+        const movimientos = data.t || [];
+        const dtPagados = movimientos.filter(item => esPagado(item.estado));
+        const dtPendientes = movimientos.filter(item => !esPagado(item.estado));
 
-        set({
-          totalMesAño: totalIngresos - totalGastos,
-          totalMesAñoPagados: ingPagados - gasPagados,
-          totalMesAñoPendientes: ingPendientes - gasPendientes
-        });
+        const total = movimientos.reduce((sum, item) => sum + Number(item.valor), 0);
+        const tpagados = dtPagados.reduce((sum, item) => sum + Number(item.valor), 0);
+        const tpendientes = dtPendientes.reduce((sum, item) => sum + Number(item.valor), 0);
+
+        set({ totalMesAño: total, totalMesAñoPagados: tpagados, totalMesAñoPendientes: tpendientes });
+        logger.debug('Totales calculados (transferencias)', { total, tpagados, tpendientes });
         return;
       }
 

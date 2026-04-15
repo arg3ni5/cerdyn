@@ -6,6 +6,7 @@ Cerdyn es un sistema para controlar los gastos personales de forma fácil y ráp
 ## 🚀 Características
 
 - 💰 Control de gastos e ingresos personales
+- 💸 Transferencias entre cuentas propias (sin afectar totales de ingresos/gastos)
 - 📊 Visualización de datos con gráficos
 - 🏦 Gestión de múltiples cuentas
 - 🏷️ Categorización de movimientos
@@ -84,8 +85,16 @@ VITE_SESSION_TIMEOUT=86400000
 
 1. Crea un proyecto en [Supabase](https://supabase.com)
 2. Configura la autenticación de Google OAuth en la sección de Authentication
-3. Ejecuta las migraciones de base de datos (si las hay)
+3. Ejecuta las migraciones de base de datos ubicadas en `database/migrations/`
 4. Copia la URL del proyecto y la clave anónima a tu archivo `.env`
+
+### Migraciones de base de datos
+
+Las migraciones están en el directorio `database/migrations/` y deben ejecutarse en orden en el SQL editor de Supabase:
+
+| Archivo | Descripción |
+|---------|-------------|
+| `001_add_transferencias.sql` | Agrega soporte para transferencias entre cuentas (tipo `t`) |
 
 ### Variables de Entorno Requeridas
 
@@ -126,6 +135,43 @@ Este proyecto implementa múltiples capas de seguridad:
 - **Logging centralizado**: Todos los errores se registran para debugging
 - **Error Boundaries**: Captura errores de React para evitar crashes
 - **Typed Environment Variables**: Variables de entorno tipadas y validadas
+
+## 💸 Transferencias entre cuentas
+
+Cerdyn soporta el tipo de movimiento **`t` (transferencia)**, que permite mover fondos entre cuentas propias sin afectar los totales de ingresos ni gastos.
+
+### Cómo funciona
+
+- Al registrar un movimiento de tipo **Transferencia**, se seleccionan:
+  - **Cuenta origen**: de donde sale el dinero
+  - **Cuenta destino**: donde entra el dinero
+- El monto **se resta** del saldo de la cuenta origen
+- El monto **se suma** al saldo de la cuenta destino
+- Las transferencias **no aparecen** en los reportes de ingresos/gastos
+
+### Ejemplo
+
+Transferir $5,000 de tu cuenta bancaria a tu cartera:
+```
+Tipo: Transferencia 💸
+Monto: $5,000
+Cuenta origen: Banco
+Cuenta destino: Cartera
+```
+
+Resultado:
+- Banco: -$5,000
+- Cartera: +$5,000
+- Ingresos totales: sin cambio
+- Gastos totales: sin cambio
+
+### Cambios requeridos en la base de datos
+
+Para habilitar transferencias, ejecuta la migración `database/migrations/001_add_transferencias.sql` en tu proyecto Supabase. Esta migración:
+1. Agrega las columnas `idcuenta_origen` e `idcuenta_destino` a la tabla `movimientos`
+2. Actualiza el trigger que asigna el usuario para soportar transferencias
+3. Actualiza las funciones de cálculo de saldo para incluir transferencias
+4. Actualiza la función RPC `mmovimientosmesanio` para retornar transferencias
 
 ## 🧪 Testing
 

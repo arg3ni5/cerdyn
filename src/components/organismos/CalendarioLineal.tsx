@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { MdOutlineNavigateNext, MdArrowBackIos } from "react-icons/md";
 import { JSX } from "react";
 import { ConvertirCapitalize, useOperaciones } from "../../index";
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 
 dayjs.locale('es');
@@ -13,18 +13,19 @@ export const CalendarioLineal = (): JSX.Element => {
   return (
     <Container className="wrapper" $colortext={colorCategoria}>
       <header>
-
         <div className="subcontainer">
-          <span onClick={substractMonth} className="atras">
+          <button type="button" onClick={substractMonth} className="atras" aria-label="Mes anterior">
             <MdArrowBackIos />
-          </span>
+          </button>
           <section className="contentValue">
-            <p onClick={setToday}>{ConvertirCapitalize(date.format('MMMM YYYY'))}</p>
+            <button type="button" onClick={setToday}>
+              {ConvertirCapitalize(date.format('MMMM YYYY'))}
+            </button>
           </section>
 
-          <span onClick={addMonth} className="adelante">
+          <button type="button" onClick={addMonth} className="adelante" aria-label="Mes siguiente">
             <MdOutlineNavigateNext />
-          </span>
+          </button>
         </div>
       </header>
     </Container>
@@ -36,47 +37,68 @@ interface ContainerProps {
 }
 const Container = styled.div<ContainerProps>`
   width: 100%;
-  border-radius: 10px;
+  border-radius: 18px;
   height: 100%;
   display: flex;
   justify-content: center;
   header {
     display: flex;
     align-items: center;
-    padding: 25px 30px 10px;
+    padding: 18px 24px;
     justify-content: space-between;
     height: 100%;
 
     .subcontainer {
-
       display: flex;
       color: ${(props) => props.$colortext};
       align-items: center;
       justify-content: center;
+      gap: 12px;
 
       .contentValue {
         border: 2px solid ${(props) => props.$colortext};
-        border-radius: 30px;
+        border-radius: 999px;
         text-align: center;
         display: flex;
         align-items: center;
-        padding: 10px;
+        padding: 0;
+
+        button {
+          border: none;
+          background: transparent;
+          color: ${(props) => props.$colortext};
+          padding: 10px 18px;
+          font-size: 1rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
       }
       .atras {
         cursor: pointer;
-        margin-left: 20px;
         svg {
-          width: 30px;
-          height: 30px;
+          width: 24px;
+          height: 24px;
         }
       }
       .adelante {
         cursor: pointer;
-          margin-right:20px;
         svg {
-          width: 45px;
-          height: 45px;
+          width: 28px;
+          height: 28px;
         }
+      }
+
+      .atras,
+      .adelante {
+        width: 42px;
+        height: 42px;
+        border: none;
+        border-radius: 999px;
+        background: ${({ theme }) => theme.bgAlpha};
+        color: ${(props) => props.$colortext};
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
     }
     .current-date {

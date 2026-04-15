@@ -82,3 +82,7 @@ export * from './utils/sweetAlertUtils';
 export * from './utils/Conversiones';
 export * from './utils/dataEstatica';
 export * from './utils/recurrencia';
+export * from './utils/totalesUtils';
+export * from './utils/export/downloadUtils';
+export * from './utils/export/excelExport';
+export * from './utils/export/pdfExport';
