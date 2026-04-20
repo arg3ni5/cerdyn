@@ -349,7 +349,12 @@ export interface TemplateCategory {
   descripcion: string | null;
 }
 
-export const downloadMovimientosImportTemplate = async (categories: TemplateCategory[]): Promise<void> => {
+export interface TemplateCuenta {
+  id: number;
+  descripcion: string | null;
+}
+
+export const downloadMovimientosImportTemplate = async (categories: TemplateCategory[], cuentas: TemplateCuenta[]): Promise<void> => {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Cerdyn';
   workbook.created = new Date();
@@ -388,6 +393,17 @@ export const downloadMovimientosImportTemplate = async (categories: TemplateCate
     { key: 'descripcion', width: 42 },
   ];
   categoriasSheet.getRow(1).font = { bold: true };
+
+  const cuentasSheet = workbook.addWorksheet('Cuentas');
+  cuentasSheet.addRow(['idcuenta', 'descripcion']);
+  cuentas.forEach((item) => {
+    cuentasSheet.addRow([item.id, item.descripcion ?? '']);
+  });
+  cuentasSheet.columns = [
+    { key: 'idcuenta', width: 14 },
+    { key: 'descripcion', width: 42 },
+  ];
+  cuentasSheet.getRow(1).font = { bold: true };
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {

@@ -160,7 +160,7 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
             <button
               type='button'
               className='secondary'
-              onClick={async () => await downloadMovimientosImportTemplate(categorias)}
+              onClick={async () => await downloadMovimientosImportTemplate(categorias, cuentas)}
             >
               Descargar plantilla oficial
             </button>
