@@ -1,5 +1,3 @@
-# Cerdyn - Sistema de Control de Gastos
-
 ## 📌 Descripción General
 Cerdyn es una aplicación de gestión de finanzas personales diseñada para controlar gastos e ingresos de forma rápida y sencilla. Permite la gestión de múltiples cuentas, categorización de movimientos y visualización de datos mediante gráficos.
 
