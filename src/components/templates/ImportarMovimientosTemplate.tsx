@@ -1,4 +1,4 @@
-import { ChangeEvent, JSX, useMemo, useState } from 'react';
+import { ChangeEvent, JSX, useMemo, useRef, useState } from 'react';
 import { Header } from '../organismos/Header';
 import { supabase } from '../../supabase/supabase.config';
 import { showErrorMessage, showSuccessMessage } from '../../utils/messages';
@@ -46,6 +46,7 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
   const [isImporting, setIsImporting] = useState(false);
   const [selectedFixes, setSelectedFixes] = useState<Record<string, number>>({});
   const [progress, setProgress] = useState({ done: 0, total: 0, failed: 0 });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validation = useMemo(() => validateImportRows(rows, categorias, cuentas, userId), [rows, categorias, cuentas, userId]);
   const categoryGroups = useMemo(() => groupCategoryIssues(validation.issues, rows), [validation.issues, rows]);
@@ -161,17 +162,21 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
             >
               Descargar plantilla oficial
             </button>
-            <label>
-              <button type='button' className='primary' disabled={isParsing}>
-                {isParsing ? 'Procesando archivo...' : 'Subir archivo XLSX'}
-              </button>
-              <input
-                type='file'
-                accept='.xlsx'
-                onChange={(event) => void onUploadFile(event)}
-                style={{ display: 'none' }}
-              />
-            </label>
+            <button
+              type='button'
+              className='primary'
+              disabled={isParsing}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isParsing ? 'Procesando archivo...' : 'Subir archivo XLSX'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type='file'
+              accept='.xlsx'
+              onChange={(event) => void onUploadFile(event)}
+              style={{ display: 'none' }}
+            />
           </ActionRow>
         </Card>
       </section>
