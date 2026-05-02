@@ -1,198 +1,199 @@
 import styled from "styled-components";
+import { motion } from "motion/react";
 
-export const Container = styled.div`
-  transition: 0.5s;
+export const Container = styled(motion.div)`
+  position: fixed;
   top: 0;
   left: 0;
-  background-color: rgba(10, 9, 9, 0.5);
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   z-index: 100;
-  color: black;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  @media (min-width: 640px) {
+    align-items: center;
+    padding: 24px;
+  }
 
   .sub-contenedor {
-    width: 500px;
-    max-width: 85%;
-    max-height: min(92vh, 780px);
-    border-radius: 20px;
     background: ${({ theme }) => theme.bgtotal};
-    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.4);
-    padding: 13px 36px 20px 36px;
-    z-index: 100;
-    color: ${({ theme }) => theme.text};
+    width: 100%;
+    max-width: 500px;
+    border-radius: 32px 32px 0 0;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    position: relative;
     display: flex;
     flex-direction: column;
+    max-height: 90vh;
+    color: ${({ theme }) => theme.text || '#1f2937'};
     overflow: hidden;
-    label {
-      font-weight: 550;
+
+    @media (min-width: 640px) {
+      border-radius: 40px;
+      height: auto;
     }
+
     .encabezado {
-      padding-top: 20px;
+      padding: 24px 24px 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      align-items: center;
-      margin-bottom: 20px;
-      h1 {
-        font-size: 30px;
-        font-weight: 700;
+      margin-bottom: 0;
+
+      @media (min-width: 640px) {
+        padding: 40px 40px 0;
       }
-      span {
-        font-size: 20px;
-        cursor: pointer;
+
+      h1 {
+        font-size: 24px;
+        font-weight: 900;
+        text-transform: uppercase;
+        line-height: 1.2;
+
+        @media (min-width: 640px) {
+          font-size: 30px;
+        }
       }
     }
+
     .formulario {
       display: flex;
       flex-direction: column;
       min-height: 0;
-      .contentBtnsave {
-        padding-top: 10px;
-        display: flex;
-        justify-content: center;
-      }
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+
       section {
-        padding-top: 5px;
-        gap: 20px;
+        padding: 24px;
+        gap: 24px;
         display: flex;
         flex-direction: column;
-        .colorContainer {
-          .colorPickerContent {
-            padding-top: 15px;
-            min-height: 50px;
-          }
+
+        @media (min-width: 640px) {
+          padding: 32px 40px;
         }
       }
     }
 
-    @media (max-width: 500px) {
-      max-width: 92%;
-      max-height: 92dvh;
-      padding: 12px 20px !important;
-
-      .formulario {
-        section {
-          overflow-y: auto;
-          min-height: 0;
-          -webkit-overflow-scrolling: touch;
-        }
-      }
-
-      input {
-        padding: 8px !important;
-        font-size: 15px;
-      }
-
-      label {
-        font-size: 14px;
-      }
+    label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      padding-left: 4px;
     }
-
   }
-  @keyframes scale-up-bottom {
-    0% {
-      transform: scale(0.5);
-      transform-origin: center bottom;
-    }
-    100% {
-      transform: scale(1);
-      transform-origin: center bottom;
-    }
+`;
+
+export const CloseButton = styled.button`
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #e14e19;
+    background-color: rgba(225, 78, 25, 0.05);
+  }
+
+  @media (min-width: 640px) {
+    top: 40px;
+    right: 40px;
   }
 `;
 
 export const WrapperPagoFecha = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 24px;
   width: 100%;
   flex-wrap: nowrap;
 
   > div {
     flex: 1;
-    min-width: 0; // evita que el contenido fuerce wrapping
+    min-width: 0;
   }
 
-  @media (max-width: 500px) {
+  @media (max-width: 640px) {
     flex-direction: column;
-    flex-wrap: wrap;
+    gap: 16px;
   }
 `;
+
 export const ContainerMonto = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
 
-  label {
-    margin-bottom: 5px;
-    font-weight: 550;
-  }
-
-  @media (max-width: 500px) {
+  @media (max-width: 640px) {
     width: 100%;
   }
 `;
-
-
 
 export const ContainerFuepagado = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   flex: 1;
-  min-width: 205px;
+
+  span {
+    display: flex;
+    align-items: center;
+  }
 `;
 
-export const ContenedorDropdown = styled.div`
+export const ContenedorDropdown = styled.div<{ $active?: boolean }>`
   position: relative;
   width: 100%;
-  flex: 1;
   display: flex;
-  gap: 10px;
-  flex-direction: row;
-  align-items: center;
-
-  @media (max-width: 500px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  flex-direction: column;
+  gap: 8px;
 
   label {
-    white-space: nowrap;
-  }
-
-  > *:not(label) {
-    flex: 1;
-    width: 100%;
+    margin-bottom: 0;
   }
 `;
 
 export const ContainerFecha = styled.div`
   display: flex;
-  flex: 1;
-  gap: 10px;
-  align-items: center;
-  min-width: 205px;
+  flex-direction: column;
+  gap: 8px;
   input {
     appearance: none;
     color: ${({ theme }) => theme.text};
     font-family: “Helvetica”, arial, sans-serif;
-    font-size: 17px;
-    border: none;
+    font-size: 16px;
+    border: 1px solid rgba(156, 163, 175, 0.2);
     background: ${({ theme }) => theme.bgtotal};
-    padding: 4px;
-    display: inline-block;
-    visibility: visible;
-    width: 140px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: block;
+    width: 100%;
     cursor: pointer;
-    &:focus {
-      border-radius: 10px;
+    transition: all 0.2s;
 
-      outline: 0;
-      /* box-shadow: 0 0 5px 0.4rem rgba(252, 252, 252, 0.25); */
+    &:focus {
+      outline: none;
+      border-color: #e14e19;
+      box-shadow: 0 0 0 3px rgba(225, 78, 25, 0.1);
     }
   }
 `;
@@ -203,27 +204,31 @@ export const ContenedorBotones = styled.div`
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  padding: 24px;
+  border-top: 1px solid rgba(156, 163, 175, 0.1);
+  background: ${({ theme }) => theme.bgtotal};
+  margin-top: auto;
+
+  @media (min-width: 640px) {
+    padding: 24px 40px;
+  }
 `;
 
 export const StickyFooter = styled.div`
-  margin-top: 20px;
-  position: sticky;
-  bottom: 0;
-  background: ${({ theme }) => theme.bgtotal};
-  padding: 10px 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10;
-  position: relative;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
 `;
 
 export const ContainerRecurrencia = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  border-top: 1px solid ${({ theme }) => theme.text}33;
-  padding-top: 10px;
+  gap: 12px;
+  border-top: 1px solid rgba(156, 163, 175, 0.1);
+  padding-top: 16px;
 `;
 
 export const FilaRecurrencia = styled.div`
@@ -232,7 +237,7 @@ export const FilaRecurrencia = styled.div`
   justify-content: space-between;
   gap: 12px;
 
-  @media (max-width: 500px) {
+  @media (max-width: 640px) {
     flex-direction: column;
     align-items: stretch;
   }
@@ -244,7 +249,7 @@ export const AccionesRecurrencia = styled.div`
   justify-content: flex-end;
   flex-wrap: wrap;
 
-  @media (max-width: 500px) {
+  @media (max-width: 640px) {
     width: 100%;
     justify-content: flex-start;
   }
@@ -253,7 +258,7 @@ export const AccionesRecurrencia = styled.div`
 export const ContainerRecurrenciaOpciones = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 `;
 
 export const FilaCamposRecurrencia = styled.div`
@@ -272,32 +277,47 @@ export const BtnPreview = styled.button`
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 6px 14px;
+  padding: 8px 14px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   align-self: flex-start;
   white-space: nowrap;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #d13f0f;
+    transform: translateY(-1px);
+  }
 `;
 
 export const BtnToggleRecurrencia = styled(BtnPreview)`
-  background: ${({ theme }) => theme.bgtotal};
+  background: transparent;
   color: ${({ theme }) => theme.text};
-  border: 1px solid ${({ theme }) => theme.text}44;
+  border: 1px solid rgba(156, 163, 175, 0.2);
+
+  &:hover {
+    background: rgba(225, 78, 25, 0.05);
+    border-color: #e14e19;
+    color: #e14e19;
+    transform: none;
+  }
 `;
 
 export const ContainerPreview = styled.div`
-  background: ${({ theme }) => theme.bgtotal};
-  border: 1px solid ${({ theme }) => theme.text}33;
+  background: rgba(225, 78, 25, 0.05);
+  border: 1px solid rgba(225, 78, 25, 0.2);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 12px;
   max-height: 150px;
   overflow-y: auto;
 
   label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    color: #e14e19;
   }
 
   ul {
@@ -306,19 +326,21 @@ export const ContainerPreview = styled.div`
     margin: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 6px;
   }
 
   li {
     background: #e14e1922;
-    border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 13px;
+    border: 1px solid #e14e1944;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
   }
 `;
 
 export const MensualHint = styled.small`
   color: ${({ theme }) => theme.text}99;
-  font-size: 12px;
+  font-size: 11px;
   display: block;
+  line-height: 1.4;
 `;
