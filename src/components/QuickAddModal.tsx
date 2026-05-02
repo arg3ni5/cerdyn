@@ -1,27 +1,100 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Save, Loader2, X } from 'lucide-react';
 import { styled } from 'styled-components';
 import { useQuickAddStore } from '../store/useQuickAddStore';
+import { useMovimientosStore, useCuentaStore, useCategoriasStore, useUsuariosStore, showErrorMessage, Categoria, Cuenta } from '../index';
+import { MovimientoInsert } from '../supabase/crudMovimientos';
 
 export default function QuickAddModal() {
   const { isOpen, closeQuickAdd } = useQuickAddStore();
+  const { insertarMovimientos } = useMovimientosStore();
+  const { mostrarCuentas } = useCuentaStore();
+  const { mostrarCategorias } = useCategoriasStore();
+  const { idusuario } = useUsuariosStore();
+
   const [isSaving, setIsSaving] = useState(false);
   const [monto, setMonto] = useState('');
-  const [categoria, setCategoria] = useState('Alimentación');
+  const [descripcion, setDescripcion] = useState('');
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<Cuenta | null>(null);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<Categoria | null>(null);
+  const [cuentaTexto, setCuentaTexto] = useState('');
+  const [categoriaTexto, setCategoriaTexto] = useState('');
 
-  const categorias = ['Alimentación', 'Transporte', 'Servicios', 'Ocio', 'Salud', 'Otros'];
+  const [cuentas, setCuentas] = useState<Cuenta[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+
+  // Cargar cuentas y categorías al abrir
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        if (idusuario && isOpen) {
+          const cuentasData = await mostrarCuentas({ idusuario } as Cuenta);
+          setCuentas(cuentasData);
+          if (cuentasData.length > 0 && !cuentaSeleccionada) {
+            setCuentaSeleccionada(cuentasData[0]);
+            setCuentaTexto(cuentasData[0].descripcion ?? '');
+          }
+
+          const categoriasData = await mostrarCategorias({ tipo: 'g', idusuario });
+          setCategorias(categoriasData);
+          if (categoriasData.length > 0 && !categoriaSeleccionada) {
+            setCategoriaSeleccionada(categoriasData[0]);
+            setCategoriaTexto(categoriasData[0].descripcion ?? '');
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        showErrorMessage('Error al cargar datos');
+      }
+    };
+
+    loadData();
+  }, [idusuario, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      // Tu lógica de inserción aquí
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (!monto || parseFloat(monto) <= 0) {
+        showErrorMessage('Por favor ingresa un monto válido');
+        setIsSaving(false);
+        return;
+      }
+
+      if (!cuentaSeleccionada) {
+        showErrorMessage('Por favor selecciona una cuenta');
+        setIsSaving(false);
+        return;
+      }
+
+      if (!categoriaSeleccionada) {
+        showErrorMessage('Por favor selecciona una categoría');
+        setIsSaving(false);
+        return;
+      }
+
+      const movimiento: MovimientoInsert = {
+        descripcion: descripcion || categoriaSeleccionada.descripcion,
+        estado: true,
+        fecha: new Date().toISOString().slice(0, 10),
+        idcategoria: categoriaSeleccionada.id,
+        idcuenta: cuentaSeleccionada.id,
+        tipo: 'g',
+        valor: parseFloat(monto),
+      };
+
+      await insertarMovimientos(movimiento);
       closeQuickAdd();
       setMonto('');
+      setDescripcion('');
+      setCuentaSeleccionada(cuentas.length > 0 ? cuentas[0] : null);
+      setCategoriaSeleccionada(categorias.length > 0 ? categorias[0] : null);
+      setCuentaTexto(cuentas.length > 0 ? (cuentas[0].descripcion ?? '') : '');
+      setCategoriaTexto(categorias.length > 0 ? (categorias[0].descripcion ?? '') : '');
     } catch (err) {
       console.error(err);
+      showErrorMessage('Error al guardar el movimiento');
     } finally {
       setIsSaving(false);
     }
@@ -63,20 +136,52 @@ export default function QuickAddModal() {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label>Categoría</Label>
-                  <GridCategorias>
-                    {categorias.map((cat) => (
-                      <CategoryLabel key={cat}>
-                        <input
-                          type="radio"
-                          name="categoria"
-                          checked={categoria === cat}
-                          onChange={() => setCategoria(cat)}
-                        />
-                        <div className="radio-btn">{cat}</div>
-                      </CategoryLabel>
+                  <Label>Descripción</Label>
+                  <InputDescripcion
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    placeholder="Ej: Almuerzo, gasolina..."
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Cuenta</Label>
+                  <FilterInput
+                    list="cuentas-list"
+                    value={cuentaTexto}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCuentaTexto(value);
+                      const cuenta = cuentas.find((c) => (c.descripcion ?? '').toLowerCase() === value.toLowerCase());
+                      setCuentaSeleccionada(cuenta || null);
+                    }}
+                    placeholder="Escribe para filtrar cuentas..."
+                  />
+                  <datalist id="cuentas-list">
+                    {cuentas.map((cuenta) => (
+                      <option key={cuenta.id} value={cuenta.descripcion ?? ''} />
                     ))}
-                  </GridCategorias>
+                  </datalist>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Categoría</Label>
+                  <FilterInput
+                    list="categorias-list"
+                    value={categoriaTexto}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCategoriaTexto(value);
+                      const categoria = categorias.find((c) => (c.descripcion ?? '').toLowerCase() === value.toLowerCase());
+                      setCategoriaSeleccionada(categoria || null);
+                    }}
+                    placeholder="Escribe para filtrar categorías..."
+                  />
+                  <datalist id="categorias-list">
+                    {categorias.map((cat) => (
+                      <option key={cat.id} value={cat.descripcion ?? ''} />
+                    ))}
+                  </datalist>
                 </FormGroup>
 
                 <SubmitButton type="submit" disabled={isSaving || !monto}>
@@ -224,42 +329,44 @@ const InputMonto = styled.input`
   }
 `;
 
-const GridCategorias = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-`;
+const InputDescripcion = styled.input`
+  width: 100%;
+  background-color: transparent;
+  border: 1px solid rgba(156, 163, 175, 0.2);
+  padding: 12px 16px;
+  border-radius: 12px;
+  outline: none;
+  font-weight: 500;
+  font-size: 14px;
+  color: inherit;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
 
-const CategoryLabel = styled.label`
-  position: relative;
-  cursor: pointer;
-
-  input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .radio-btn {
-    text-align: center;
-    padding: 12px 8px;
-    border-radius: 12px;
-    border: 1px solid rgba(156, 163, 175, 0.2);
-    font-size: 11px;
-    font-weight: 900;
-    text-transform: uppercase;
-    transition: all 0.2s;
-  }
-
-  input:checked ~ .radio-btn {
-    background-color: #e14e19;
-    color: white;
+  &:focus {
     border-color: #e14e19;
   }
 
-  &:hover .radio-btn {
-    background-color: rgba(225, 78, 25, 0.05);
+  &::placeholder {
+    color: #9ca3af;
+  }
+`;
+
+const FilterInput = styled.input`
+  width: 100%;
+  background-color: transparent;
+  border: 1px solid rgba(156, 163, 175, 0.2);
+  padding: 12px 16px;
+  border-radius: 12px;
+  outline: none;
+  font-weight: 500;
+  font-size: 14px;
+  color: inherit;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  cursor: pointer;
+
+  &:focus {
+    border-color: #e14e19;
   }
 `;
 
