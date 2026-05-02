@@ -14,6 +14,8 @@ import { Dark, Light } from "./styles/themes";
 import { Device } from "./styles/breakpoints";
 import type { Usuario } from "./supabase/crudUsuarios";
 import ErrorBoundary from "./components/ErrorBoundary";
+import QuickAddModal from "./components/QuickAddModal";
+import FloatingAddButton from './components/FloatingAddButton';
 
 type ThemeContextType = typeof Light;
 
@@ -80,6 +82,8 @@ function App(): JSX.Element {
                   </div>
 
                   <Containerbody>
+                    <FloatingAddButton />
+                    <QuickAddModal />
                     <MyRoutes isLoading={isLoading} />
                   </Containerbody>
                 </Container>
