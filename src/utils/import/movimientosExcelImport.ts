@@ -34,6 +34,7 @@ export type ValidationIssueCode =
   | 'TRANSFER_NOT_ALLOWED'
   | 'MISSING_CATEGORY'
   | 'INVALID_CATEGORY'
+  | 'MISSING_ACCOUNT'
   | 'INVALID_ACCOUNT';
 
 export interface ValidationIssue {
@@ -141,7 +142,7 @@ export const parseMovimientosWorkbook = async (buffer: ArrayBuffer): Promise<Par
     if (value) indexes[value] = colNumber;
   });
 
-  const requiredHeaders = ['fecha', 'descripcion', 'tipo', 'valor', 'idcategoria'];
+  const requiredHeaders = ['fecha', 'descripcion', 'tipo', 'valor', 'idcategoria', 'idcuenta'];
   const missingHeaders = requiredHeaders.filter((header) => !(header in indexes));
   if (missingHeaders.length > 0) {
     throw new Error(`Faltan columnas obligatorias en la hoja Movimientos: ${missingHeaders.join(', ')}`);
@@ -264,6 +265,14 @@ export const validateImportRows = (
           });
         }
       }
+    }
+
+    if (tipoResult.kind === 'valid' && row.idcuenta == null) {
+      issues.push({
+        code: 'MISSING_ACCOUNT',
+        rowNumber: row.rowNumber,
+        message: `Fila ${row.rowNumber}: falta idcuenta para ${tipoResult.value === 'i' ? 'ingreso' : 'gasto'}`,
+      });
     }
 
     if (row.idcuenta != null && !userAccounts.has(row.idcuenta)) {

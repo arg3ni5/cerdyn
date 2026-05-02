@@ -64,7 +64,7 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
 
   const stepTo = (next: Step): void => {
     if (next === 2 && rows.length === 0) return;
-    if (next === 3 && validation.issues.length === 0) return;
+    if (next === 3 && rows.length === 0) return;
     setStep(next);
   };
 
@@ -115,25 +115,22 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
 
     const chunks = chunkRows(payload, INSERT_CHUNK_SIZE);
     let inserted = 0;
-    let failed = 0;
     setProgress({ done: 0, total: payload.length, failed: 0 });
     setIsImporting(true);
 
     for (const chunk of chunks) {
       const { error } = await supabase.from('movimientos').insert(chunk as never);
       if (error) {
-        failed += chunk.length;
-      } else {
-        inserted += chunk.length;
+        setIsImporting(false);
+        setProgress({ done: inserted, total: payload.length, failed: chunk.length });
+        showErrorMessage(`Error al importar: ${error.message}`);
+        return;
       }
-      setProgress({ done: inserted + failed, total: payload.length, failed });
+      inserted += chunk.length;
+      setProgress({ done: inserted, total: payload.length, failed: 0 });
     }
 
     setIsImporting(false);
-    if (failed > 0) {
-      showErrorMessage(`Importación finalizada con errores. Insertados: ${inserted}. Fallidos: ${failed}.`);
-      return;
-    }
     showSuccessMessage(`Importación completada. Se insertaron ${inserted} movimientos.`);
     setRows([]);
     setSelectedFixes({});

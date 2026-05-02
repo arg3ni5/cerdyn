@@ -199,16 +199,20 @@ Se agregó la ruta **`/movimientos/importar`** para importar movimientos en 3 pa
   - `tipo` (`ingreso` o `gasto`)
   - `valor` (> 0)
   - `idcategoria` (obligatorio)
-  - `idcuenta` (opcional)
+  - `idcuenta` (obligatorio)
 - Hoja `Categorias` (referencia):
   - `tipo`
   - `idcategoria`
+  - `descripcion`
+- Hoja `Cuentas` (referencia):
+  - `idcuenta`
   - `descripcion`
 
 ### Reglas clave
 
 - **No se admiten transferencias** en este flujo de importación.
 - La categoría debe existir para el usuario actual y coincidir con el tipo de movimiento.
+- La cuenta (`idcuenta`) es obligatoria y debe pertenecer al usuario actual.
 - Si hay categorías inválidas/faltantes, se pueden corregir por grupos con “Aplicar a todas”.
 
 ## 📝 Scripts disponibles
