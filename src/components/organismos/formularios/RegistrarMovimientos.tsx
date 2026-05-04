@@ -26,9 +26,9 @@ import {
   Cuenta,
 } from "../../../index";
 import { ConfigRecurrencia } from "../../../store/MovimientosStore";
-import { showConfirmDialog } from "../../../utils/messages";
 import { useQuery } from "@tanstack/react-query";
 import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, CloseButton, Container, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
+import { ConfirmDialog } from "../../moleculas/ConfirmDialog";
 
 interface RegistrarMovimientosProps {
   setState: () => void;
@@ -85,6 +85,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   const [politica, setPolitica] = useState<'este_mes' | 'proximo_mes'>('este_mes');
   const [previewFechas, setPreviewFechas] = useState<string[]>([]);
   const [recurrenciaColapsada, setRecurrenciaColapsada] = useState<boolean>(false);
+  const [pendingRecurrencia, setPendingRecurrencia] = useState<MovimientoInsert | null>(null);
 
   const opcionesModoRecurrencia = [
     { icono: "", descripcion: "Cada N días", value: "intervalo" as const },
@@ -168,6 +169,18 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     setPreviewFechas([]);
   }, [repeticionesForm]);
 
+  const insertarRecurrente = async (baseData: MovimientoInsert): Promise<void> => {
+    const config: ConfigRecurrencia = {
+      modo: modoRecurrencia,
+      repeticiones,
+      intervaloDias: modoRecurrencia === 'intervalo' ? intervaloDias : undefined,
+      diaMes: modoRecurrencia === 'mensual' ? diaMes : undefined,
+      politica: modoRecurrencia === 'mensual' ? politica : undefined,
+    };
+    await insertarMovimientosRecurrentes(baseData, config);
+    setState();
+  };
+
   const insertar = async (formData: FormInputs): Promise<void> => {
     if (esTransferencia) {
       if (cuentaOrigen == null) {
@@ -217,27 +230,15 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     try {
       if (esRecurrente) {
         if (repeticiones > 20) {
-          const confirmed = await showConfirmDialog(
-            `Vas a crear ${repeticiones} movimientos recurrentes. ¿Quieres continuar?`,
-            '¿Estás seguro?',
-            `Sí, crear ${repeticiones}`,
-            'Cancelar'
-          );
-          if (!confirmed) return;
+          setPendingRecurrencia(baseData);
+          return;
         }
-        const config: ConfigRecurrencia = {
-          modo: modoRecurrencia,
-          repeticiones,
-          intervaloDias: modoRecurrencia === 'intervalo' ? intervaloDias : undefined,
-          diaMes: modoRecurrencia === 'mensual' ? diaMes : undefined,
-          politica: modoRecurrencia === 'mensual' ? politica : undefined,
-        };
-        await insertarMovimientosRecurrentes(baseData, config);
+        await insertarRecurrente(baseData);
       } else {
         console.log(baseData);
         await insertarMovimientos(baseData);
+        setState();
       }
-      setState();
     } catch (err) {
       console.error(err);
     }
@@ -418,6 +419,23 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
 
   return (
     <AnimatePresence>
+      {pendingRecurrencia && (
+        <ConfirmDialog
+          title="¿Crear movimientos recurrentes?"
+          message={`Vas a crear ${repeticiones} movimientos recurrentes. ¿Quieres continuar?`}
+          confirmText={`Sí, crear ${repeticiones}`}
+          variant="warning"
+          onConfirm={async () => {
+            setPendingRecurrencia(null);
+            try {
+              await insertarRecurrente(pendingRecurrencia);
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+          onCancel={() => setPendingRecurrencia(null)}
+        />
+      )}
       {state && (
         <Container
           as={motion.div}

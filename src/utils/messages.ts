@@ -24,18 +24,3 @@ export function showWarningMessage (message: string, title: string = '⚠️ Adv
   logger.warn('User-facing warning displayed', { message, title })
   useToastStore.getState().addToast({ type: 'warning', message, duration: 4000 })
 }
-
-/**
- * Display a confirmation dialog — returns a Promise<boolean>.
- * Callers must render a <ConfirmDialog> component to handle this;
- * this helper now delegates to a simple browser confirm as a fallback
- * to keep the async API working in non-React contexts (e.g. utils).
- */
-export async function showConfirmDialog (
-  message: string,
-  _title: string = '¿Estás seguro?',
-  _confirmText: string = 'Sí, confirmar',
-  _cancelText: string = 'Cancelar'
-): Promise<boolean> {
-  return window.confirm(message)
-}
