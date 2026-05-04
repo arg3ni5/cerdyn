@@ -9,7 +9,6 @@ import {
   MovimientosMesAnio,
   Paginacion,
   Tipo,
-  useCuentaStore,
   useMovimientosStore,
 } from "../../../index";
 import { v } from "../../../styles/variables";
@@ -27,6 +26,11 @@ interface TablaTransferenciasProps {
   setAccion: (value: Accion) => void;
 }
 
+type TransferenciaRow = MovimientosMesAnio[number] & {
+  cuenta_origen: string | null;
+  cuenta_destino: string | null;
+};
+
 export const TablaTransferencias = ({
   titulo,
   tipo,
@@ -38,14 +42,8 @@ export const TablaTransferencias = ({
 }: TablaTransferenciasProps): JSX.Element | null => {
   const [pagina, setPagina] = useState<number>(1);
   const [pendingDelete, setPendingDelete] = useState<Movimiento | null>(null);
-  const { cuentas } = useCuentaStore();
   const { eliminarMovimiento } = useMovimientosStore();
   const porPagina = 10;
-
-  const cuentaPorId = useMemo(
-    () => new Map(cuentas.map((cuenta) => [cuenta.id, cuenta])),
-    [cuentas]
-  );
 
   const groupedData = useMemo(() => {
     const grupos: { [key: string]: MovimientosMesAnio } = {};
@@ -78,13 +76,15 @@ export const TablaTransferencias = ({
     return false;
   };
 
-  const obtenerCuenta = (id: number | null): string => {
-    if (!id) return "-";
-    const cuenta = cuentaPorId.get(id);
-    return cuenta ? `${cuenta.icono || ""} ${cuenta.descripcion || `Cuenta #${id}`}`.trim() : `Cuenta #${id}`;
+  const obtenerCuentaOrigen = (item: TransferenciaRow): string => {
+    return item.cuenta_origen || "-";
   };
 
-  const editar = (item: MovimientosMesAnio[number]): void => {
+  const obtenerCuentaDestino = (item: TransferenciaRow): string => {
+    return item.cuenta_destino || "-";
+  };
+
+  const editar = (item: TransferenciaRow): void => {
     setOpenRegistro(true);
     setDataSelect({ ...convertToMovimiento(item), tipo: "t" } as Movimiento);
     setAccion("Editar");
@@ -152,27 +152,33 @@ export const TablaTransferencias = ({
                         </FechaHeader>
                       </td>
                     </tr>
-                    {group.movimientos.map((item) => (
-                      <tr key={item.id}>
-                        <th scope="row">
-                          <Pagado
-                            $bgcolor={esPagado(item.estado) ? "#69e673" : "#b3b3b3"}
-                            onClick={() => toggleEstado(item)}
-                            title={esPagado(item.estado) ? "Clic para marcar como pendiente" : "Clic para marcar como pagado"}
-                          />
-                        </th>
-                        <td data-title="Descripción">{item.descripcion || "Transferencia"}</td>
-                        <td data-title="Origen">{obtenerCuenta(item.idcuenta_origen)}</td>
-                        <td data-title="Destino">{obtenerCuenta(item.idcuenta_destino)}</td>
-                        <td data-title="Valor">{item.valorymoneda}</td>
-                        <td data-title="Acciones">
-                          <ContentAccionesTabla
-                            funcionEditar={() => editar(item)}
-                            funcionEliminar={() => setPendingDelete(convertToMovimiento(item))}
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {group.movimientos.map((item) => {
+                      const transferencia = item as TransferenciaRow;
+
+                      return (
+                        <tr key={item.id}>
+                          <th scope="row">
+                            <span className="status-label">Estado</span>
+                            <Pagado
+                              $bgcolor={esPagado(item.estado) ? "#69e673" : "#b3b3b3"}
+                              onClick={() => toggleEstado(item)}
+                              title={esPagado(item.estado) ? "Clic para marcar como pendiente" : "Clic para marcar como pagado"}
+                            />
+                            <span className="status-text">{esPagado(item.estado) ? "Pagado" : "Pendiente"}</span>
+                          </th>
+                          <td data-title="Descripción">{item.descripcion || "Transferencia"}</td>
+                          <td data-title="Origen">{obtenerCuentaOrigen(transferencia)}</td>
+                          <td data-title="Destino">{obtenerCuentaDestino(transferencia)}</td>
+                          <td data-title="Valor">{item.valorymoneda}</td>
+                          <td data-title="Acciones">
+                            <ContentAccionesTabla
+                              funcionEditar={() => editar(transferencia)}
+                              funcionEliminar={() => setPendingDelete(convertToMovimiento(item))}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </React.Fragment>
                 ))}
             </tbody>
