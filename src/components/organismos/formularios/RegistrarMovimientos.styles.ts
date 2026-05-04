@@ -41,11 +41,21 @@ export const Container = styled(motion.div)`
       padding: 24px 24px 0;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: 0;
+      padding-right: 76px;
 
       @media (min-width: 640px) {
         padding: 40px 40px 0;
+        padding-right: 96px;
+      }
+
+      .encabezado-contenido {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        min-width: 0;
       }
 
       h1 {
@@ -53,10 +63,15 @@ export const Container = styled(motion.div)`
         font-weight: 900;
         text-transform: uppercase;
         line-height: 1.2;
+        margin: 0;
 
         @media (min-width: 640px) {
           font-size: 30px;
         }
+      }
+
+      .selector-tipo-movimiento {
+        max-width: 100%;
       }
     }
 

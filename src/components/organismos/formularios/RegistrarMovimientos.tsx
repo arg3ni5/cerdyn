@@ -439,7 +439,6 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
       {state && (
         <Container
           as={motion.div}
-          onClick={setState}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
