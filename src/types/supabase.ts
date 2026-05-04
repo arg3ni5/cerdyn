@@ -257,11 +257,15 @@ export type Database = {
           valor: number;
           fecha: string;
           estado: boolean;
+          idcuenta: number | null;
           cuenta: string;
+          idcategoria: number | null;
           categoria: string;
           valorymoneda: string;
           idcuenta_origen: number | null;
+          cuenta_origen: string | null;
           idcuenta_destino: number | null;
+          cuenta_destino: string | null;
         }[];
       };
       mmovimientosmesanio_all: {
