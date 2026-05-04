@@ -1,9 +1,13 @@
 import { Plus } from 'lucide-react';
 import { styled } from 'styled-components';
+import { useLocation } from 'react-router-dom';
 import { useQuickAddStore } from '../store/useQuickAddStore';
 
 export default function FloatingAddButton() {
   const openQuickAdd = useQuickAddStore((state) => state.openQuickAdd);
+  const { pathname } = useLocation();
+
+  if (pathname === '/movimientos') return null;
 
   return (
     <FabButton onClick={openQuickAdd}>
