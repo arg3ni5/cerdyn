@@ -163,15 +163,54 @@ export const ContainerMonto = styled.div`
   }
 `;
 
+export const ContainerDescripcion = styled(ContainerMonto)`
+  gap: 8px;
+
+  label {
+    margin-bottom: 0;
+  }
+`;
+
 export const ContainerFuepagado = styled.div`
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
   flex: 1;
 
-  span {
+  label {
+    margin-bottom: 0;
+  }
+
+  .pago-control {
+    min-height: 48px;
     display: flex;
     align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(156, 163, 175, 0.2);
+    border-radius: 12px;
+    padding: 4px 6px 4px 14px;
+  }
+
+  .pago-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f97316;
+    flex: 0 0 auto;
+  }
+
+  .pago-text {
+    color: ${({ theme }) => theme.text};
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+    min-width: 72px;
+  }
+
+  .MuiSwitch-root {
+    margin-left: auto;
   }
 `;
 

@@ -2,7 +2,7 @@ import { JSX, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Switch } from "@mui/material";
 import { motion, AnimatePresence } from "motion/react";
-import { X } from "lucide-react";
+import { CircleCheck, X } from "lucide-react";
 import {
   useMovimientosStore,
   useCategoriasStore,
@@ -27,7 +27,7 @@ import {
 } from "../../../index";
 import { ConfigRecurrencia } from "../../../store/MovimientosStore";
 import { useQuery } from "@tanstack/react-query";
-import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, CloseButton, Container, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
+import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, CloseButton, Container, ContainerDescripcion, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
 import { ConfirmDialog } from "../../moleculas/ConfirmDialog";
 
 interface RegistrarMovimientosProps {
@@ -496,13 +496,18 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
               <section>
                 <WrapperPagoFecha>
                   <ContainerFuepagado>
-                    <span>{<v.iconocheck />}</span>
                     <label>Fue pagado:</label>
-                    <Switch
-                      onChange={estadoControl}
-                      checked={estado}
-                      color="warning"
-                    />
+                    <div className="pago-control">
+                      <span className="pago-icon">
+                        <CircleCheck size={18} strokeWidth={2.4} />
+                      </span>
+                      <span className="pago-text">{estado ? "Pagado" : "Pendiente"}</span>
+                      <Switch
+                        onChange={estadoControl}
+                        checked={estado}
+                        color="warning"
+                      />
+                    </div>
                   </ContainerFuepagado>
                   <ContainerFecha>
                     <label>Fecha:</label>
@@ -524,15 +529,16 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                   />
                 </ContainerMonto>
 
-                <div>
+                <ContainerDescripcion>
                   <label>Descripción:</label>
                   <InputText
                     defaultValue={dataSelect.descripcion!}
                     register={register}
-                    placeholder="Ingrese una descripcion"
+                    placeholder="Ingrese una descripción"
                     errors={errors}
+                    variant="surface"
                   />
-                </div>
+                </ContainerDescripcion>
 
                 {esTransferencia ? (
                   <>
