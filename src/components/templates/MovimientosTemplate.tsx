@@ -189,7 +189,12 @@ export const MovimientosTemplate = (): JSX.Element => {
       />
 
       <header className="header">
-        <Header stateConfig={{ state: state, setState: openUser }} eyebrow="Movimientos" title={tituloMovimientos} />
+        <Header
+          stateConfig={{ state: state, setState: openUser }}
+          eyebrow="Movimientos"
+          title={tituloMovimientos}
+          actions={<CalendarioLineal />}
+        />
       </header>
 
       <section className="hero">
