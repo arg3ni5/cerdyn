@@ -114,9 +114,6 @@ export const VincularTemplate: React.FC = () => {
         {status === "already" && <p>⚠️ Esta cuenta de {canal} ya está vinculada.</p>}
         {status === "error" && <p>❌ Ocurrió un error al vincular tu cuenta.</p>}
       </section>
-      <section className="area1">
-        {(status === "success" || status === "already") && <IrAConexiones onClick={() =>
-          navigate("/conexiones", { replace: true })}>🔗 Ver mis cuentas vinculadas</IrAConexiones>}
 
       <MainCard>
         <Eyebrow>Vincular Canal</Eyebrow>
