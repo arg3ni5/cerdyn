@@ -24,7 +24,7 @@ export const ThemeContext = createContext<ThemeContextType>(Light);
 
 function App(): JSX.Element {
   const { setUsuario, clearUsuario, ObtenerUsuarioActual } = useUsuariosStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isPublicRoute = pathname === "/login" || pathname === "/auth/callback";
