@@ -60,11 +60,19 @@ export const ContentHeader = styled.div`
     flex-direction: column-reverse;
     gap: 8px;
 
+    > button {
+      align-self: flex-end;
+      margin: 0;
+      max-width: 220px;
+      padding: 4px 8px;
+      width: auto;
+    }
+
     .header-main {
       width: 100%;
       flex-direction: column;
       align-items: flex-start;
-      gap: 12px;
+      gap: 10px;
     }
 
     .header-actions,
@@ -74,6 +82,22 @@ export const ContentHeader = styled.div`
 
     .header-actions .wrapper {
       justify-content: flex-start;
+    }
+
+    .header-actions .wrapper .subcontainer {
+      gap: 8px;
+    }
+
+    .header-actions .wrapper .subcontainer .atras,
+    .header-actions .wrapper .subcontainer .adelante {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+    }
+
+    .header-actions .wrapper .subcontainer .contentValue button {
+      padding: 8px 14px;
+      font-size: 0.92rem;
     }
   }
 `;
