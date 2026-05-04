@@ -16,6 +16,7 @@ import type { Usuario } from "./supabase/crudUsuarios";
 import ErrorBoundary from "./components/ErrorBoundary";
 import QuickAddModal from "./components/QuickAddModal";
 import FloatingAddButton from './components/FloatingAddButton';
+import { ToastContainer } from './components/atomos/ToastContainer';
 
 type ThemeContextType = typeof Light;
 
@@ -67,6 +68,7 @@ function App(): JSX.Element {
         <LoadingProvider>
           <ThemeProvider theme={themeStyle}>
             <GlobalStyles />
+            <ToastContainer />
             <AuthContextProvider>
               {!isPublicRoute ? (
                 <Container className={sidebarOpen ? "active" : ""}>

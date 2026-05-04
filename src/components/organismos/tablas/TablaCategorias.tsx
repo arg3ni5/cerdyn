@@ -7,8 +7,9 @@ import {
   Categoria,
   CategoriaQueryParams
 } from "../../../index";
-import Swal from "sweetalert2";
 import { v } from "../../../styles/variables";
+import { ConfirmDialog } from "../../moleculas/ConfirmDialog";
+import { AnimatePresence } from "motion/react";
 
 interface TablaCategoriasProps {
   data: Categoria[];
@@ -39,6 +40,7 @@ export const TablaCategorias = ({
 
   const [pagina, setPagina] = useState<number>(1);
   const [porPagina] = useState<number>(10);
+  const [pendingDelete, setPendingDelete] = useState<Categoria | null>(null);
 
   const mx = data.length / porPagina;
   const maximo = mx < 1 ? 1 : mx;
@@ -46,19 +48,15 @@ export const TablaCategorias = ({
   const { eliminarCategoria } = useCategoriasStore();
 
   const eliminar = (p: Categoria): void => {
-    Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
-      text: "Una vez eliminado, ¡no podrá recuperar este registro!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Si, eliminar",
-    }).then(async (result) => {
-      if (result.isConfirmed && p.id && p.idusuario) {
-        await eliminarCategoria({ id: p.id, idusuario: p.idusuario } as CategoriaQueryParams);
-      }
-    });
+    setPendingDelete(p);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.id && pendingDelete.idusuario) {
+      await eliminarCategoria({ id: pendingDelete.id, idusuario: pendingDelete.idusuario } as CategoriaQueryParams);
+    }
+    setPendingDelete(null);
   };
 
   const editar = (data: Categoria): void => {
@@ -69,6 +67,17 @@ export const TablaCategorias = ({
 
   return (
     <Container>
+      <AnimatePresence>
+        {pendingDelete && (
+          <ConfirmDialog
+            title="¿Eliminar categoría?"
+            message="Una vez eliminada, ¡no podrá recuperar este registro!"
+            confirmText="Sí, eliminar"
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setPendingDelete(null)}
+          />
+        )}
+      </AnimatePresence>
       <table className="responsive-table">
         <thead>
           <tr>

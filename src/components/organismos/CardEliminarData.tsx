@@ -1,31 +1,38 @@
+import { useState } from "react";
 import styled from "styled-components";
 import { BtnForm } from "../moleculas/BtnForm";
 import { v } from "../../styles/variables";
 import { useCategoriasStore, useUsuariosStore } from "../../index";
-import Swal from "sweetalert2";
+import { ConfirmDialog } from "../moleculas/ConfirmDialog";
+import { AnimatePresence } from "motion/react";
+
 export function CardEliminarData() {
   const { eliminarCategoriasTodas } = useCategoriasStore();
   const { usuario } = useUsuariosStore();
-  const eliminar = async () => {
-    Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
-      text: "Una vez eliminado, ¡no podrá recuperar estos registros!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Si, eliminar",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const p = {
-          idusuario: usuario?.id,
-        };
-        await eliminarCategoriasTodas(p);
-      }
-    });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleConfirm = async () => {
+    const p = {
+      idusuario: usuario?.id,
+    };
+    await eliminarCategoriasTodas(p);
+    setConfirmOpen(false);
   };
+
   return (
     <Container>
+      <AnimatePresence>
+        {confirmOpen && (
+          <ConfirmDialog
+            title="¿Resetear todo?"
+            message="Esta acción es irreversible. Se eliminarán todos tus movimientos, categorías y se resetearán los saldos de tus cuentas."
+            confirmText="Sí, resetear"
+            onConfirm={handleConfirm}
+            onCancel={() => setConfirmOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <h2>Resetear todo</h2>
       <span>
         🐽ADVERTENCIA!: *esta acción es irreversible, una vez ejecutada se
@@ -36,7 +43,7 @@ export function CardEliminarData() {
       <BtnForm
         titulo="resetear"
         bgcolor="rgba(247, 92, 92, 0.87)"
-        funcion={eliminar}
+        funcion={() => setConfirmOpen(true)}
       />
       <div className="contentImg">
         <img src={v.logo2} />

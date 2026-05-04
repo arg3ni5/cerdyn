@@ -9,11 +9,12 @@ import {
   Tipo,
   useMovimientosStore,
 } from "../../../index";
-import Swal from "sweetalert2";
 import { v } from "../../../styles/variables";
 import { JSX, useState, useMemo } from "react";
 import React from "react";
 import { convertToMovimiento } from '../../../supabase/crudMovimientos';
+import { ConfirmDialog } from "../../moleculas/ConfirmDialog";
+import { AnimatePresence } from "motion/react";
 
 interface TablaMovimientosProps {
   titulo?: string;
@@ -40,6 +41,7 @@ export const TablaMovimientos = ({
 
   const [pagina, setPagina] = useState<number>(1);
   const porPagina = 10;
+  const [pendingDelete, setPendingDelete] = useState<Movimiento | null>(null);
 
   // Agrupar movimientos por fecha
   const groupedData = useMemo(() => {
@@ -68,19 +70,13 @@ export const TablaMovimientos = ({
   const { eliminarMovimiento } = useMovimientosStore();
 
   const eliminar = (p: Movimiento): void => {
-    Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
-      text: "Una vez eliminado, ¡no podrá recuperar este registro!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Si, eliminar",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await eliminarMovimiento({ id: p.id } as Movimiento);
-      }
-    });
+    setPendingDelete(p);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    await eliminarMovimiento({ id: pendingDelete.id } as Movimiento);
+    setPendingDelete(null);
   };
 
   const editar = (data: Movimiento): void => {
@@ -113,6 +109,17 @@ export const TablaMovimientos = ({
 
   return (
     <>
+      <AnimatePresence>
+        {pendingDelete && (
+          <ConfirmDialog
+            title="¿Eliminar movimiento?"
+            message="Una vez eliminado, ¡no podrá recuperar este registro!"
+            confirmText="Sí, eliminar"
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setPendingDelete(null)}
+          />
+        )}
+      </AnimatePresence>
       <Container $bgcolor={tipo.bgcolor || ''} $color={tipo.color || ''}>
         {titulo && (<h3>{titulo}</h3>)}
         <div className="table-wrapper">
