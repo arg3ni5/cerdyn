@@ -20,16 +20,24 @@ export const Container = styled.div<ContainerProps>`
   display: grid;
   gap: 22px;
   grid-template:
-    "header" 100px
+    "header" auto
     "hero" auto
     "totales" auto
     "main" auto
     "empty" auto;
 
   .header {
+    margin-left: 15px;
     grid-area: header;
     display: flex;
     align-items: center;
+    min-height: 100px;
+
+    @media (max-width: 640px) {
+      margin-left: 0;
+      min-height: 0;
+      align-items: flex-start;
+    }
   }
 
   .hero {
@@ -46,7 +54,7 @@ export const Container = styled.div<ContainerProps>`
 
   .totales {
     grid-area: totales;
-    display: grid;    
+    display: grid;
     align-items: stretch;
     grid-template-columns: 1fr;
     gap: 14px;
@@ -276,6 +284,7 @@ export const FilterBar = styled.div`
   @media (max-width: 480px) {
     padding: 12px;
     border-radius: 20px;
+    gap: 10px;
   }
 `;
 
@@ -299,6 +308,7 @@ export const TypeTabs = styled.div`
     overflow-x: auto;
     padding: 2px 2px 6px;
     scrollbar-width: thin;
+    scroll-snap-type: x proximity;
   }
 `;
 
@@ -338,12 +348,17 @@ export const TypeTabButton = styled.button<AccentProps & { $active: boolean }>`
 
   @media (max-width: 760px) {
     flex: 0 0 auto;
-    min-width: 132px;
+    min-width: 124px;
+    scroll-snap-align: start;
   }
 
   @media (max-width: 420px) {
-    min-width: 118px;
-    padding-inline: 11px;
+    min-width: 112px;
+    padding-inline: 10px;
+
+    strong {
+      font-size: 12px;
+    }
   }
 `;
 
