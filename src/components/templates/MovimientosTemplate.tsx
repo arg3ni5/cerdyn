@@ -1,9 +1,6 @@
 import {
   Header,
-  ContentFiltros,
-  Btndesplegable,
   useOperaciones,
-  ListaMenuDesplegable,
   v,
   Lottieanimacion,
   Tipo,
@@ -19,8 +16,8 @@ import {
   DataMovimientos,
   CalendarioLineal,
   obtenerTitulo,
-  BtnIcono,
   TablaMovimientos,
+  TablaTransferencias,
   TipoMovimiento,
 } from "../../index";
 import { JSX, useState } from "react";
@@ -31,20 +28,18 @@ import { DataDesplegables } from '../../utils/dataEstatica';
 import {
   ActionCard,
   CalendarShell,
+  CategoryFilter,
   Container,
   ContentFiltro,
-  DesktopOnly,
   EmptyState,
-  Eyebrow,
-  HeroCopy,
+  FilterBar,
+  FilterSearch,
   HeroStats,
-  MobileOnly,
-  PrimaryAction,
-  SearchCard,
-  ToolbarActions,
-  ToolbarCard,
-  ToolbarDescription,
-  ToolbarLabel,
+  FloatingActionMenu,
+  FloatingActionOption,
+  FloatingActionToggle,
+  TypeTabButton,
+  TypeTabs,
   TypeBadge,
 } from './MovimientosTemplate.styles';
 
@@ -53,7 +48,8 @@ export const MovimientosTemplate = (): JSX.Element => {
   const [openRegistro, setOpenRegistro] = useState(false);
   const [accion, setAccion] = useState<Accion>("Nuevo");
   const [state, setState] = useState(false);
-  const [stateTipo, setStateTipo] = useState(false);
+  const [stateAccionesRegistro, setStateAccionesRegistro] = useState(false);
+  const [tipoRegistro, setTipoRegistro] = useState<Tipo | undefined>(undefined);
   const { setTipoMovimientos, selectTipoMovimiento: tipo } = useOperaciones();
   const {
     datamovimientos,
@@ -69,22 +65,19 @@ export const MovimientosTemplate = (): JSX.Element => {
 
   const cambiarTipo = (p: Tipo): void => {
     setTipoMovimientos(p);
-    setStateTipo(!stateTipo);
     setState(false);
+    setStateListaCategorias(false);
+    setFiltros(filtroDescripcion, "");
   };
 
   const cerrarDesplegables = (): void => {
-    setStateTipo(false);
     setState(false);
+    setStateAccionesRegistro(false);
+    setStateListaCategorias(false);
   };
 
-  const openTipo = (): void => {
-    setStateTipo(!stateTipo);
-    setState(false);
-  };
   const openUser = (): void => {
     setState(!state);
-    setStateTipo(false);
   };
 
   const gastos = DataDesplegables.movimientos['g'] as Tipo;
@@ -100,15 +93,21 @@ export const MovimientosTemplate = (): JSX.Element => {
   };
 
   const tipoActual = tipos[tipo.tipo as TipoMovimiento];
-  const tipoAlterno = tipo.tipo === "g" ? tipos.i : tipos.g;
-  const tipoTercero = tipo.tipo === "b" ? tipos.i : tipos.b;
-  const accionAlterno = tipo.tipo === "g" ? ingresos : gastos;
-  const accionTercero = tipo.tipo === "b" ? ingresos : balance;
+  const tiposFiltro = [ingresos, gastos, balance, transferencias];
 
-  const nuevoRegistro = (): void => {
-    setOpenRegistro(!openRegistro);
+  const obtenerTextoNuevoMovimiento = (item: Tipo): string => {
+    if (item.tipo === "t") return "Nueva Transferencia";
+    if (item.tipo === "i") return "Nuevo Ingreso";
+    if (item.tipo === "g") return "Nuevo Gasto";
+    return "Nuevo movimiento";
+  };
+
+  const nuevoRegistro = (tipoNuevo?: Tipo): void => {
+    setOpenRegistro(true);
     setAccion("Nuevo");
     setDataSelect(undefined);
+    setTipoRegistro(tipoNuevo || (tipo.tipo !== "b" ? tipoActual : gastos));
+    setStateAccionesRegistro(false);
   };
 
   const isBalanceActive = tipo.tipo === "b";
@@ -173,37 +172,83 @@ export const MovimientosTemplate = (): JSX.Element => {
 
   const totals = calculateFilteredTotals(tipo.tipo as "i" | "g" | "b" | "t");
   const totalVisible =
-    (filteredDatamovimientos.i?.length || 0) +
-    (filteredDatamovimientos.g?.length || 0) +
-    (filteredDatamovimientos.t?.length || 0);
-  const typeDescriptionMap: Record<TipoMovimiento, string> = {
-    g: "Revisá tus gastos del período, filtrá rápido por categoría y encontrá en qué se está yendo el dinero.",
-    i: "Seguile la pista a tus ingresos con una vista más limpia para detectar entradas registradas, pagadas y pendientes.",
-    b: "Compará ingresos, gastos y transferencias en una sola vista para entender cómo viene tu balance general.",
-    t: "Controlá tus transferencias entre cuentas y revisá cuáles ya quedaron registradas dentro del período activo.",
-  };
+    tipo.tipo === "b"
+      ? (filteredDatamovimientos.i?.length || 0) +
+        (filteredDatamovimientos.g?.length || 0) +
+        (filteredDatamovimientos.t?.length || 0)
+      : (filteredDatamovimientos[tipo.tipo as "i" | "g" | "t"]?.length || 0);
+  const tituloMovimientos = tipo.tipo === "b" ? "Balance" : tipoActual.text + "s";
+  const mostrarFiltroCategoria = tipo.tipo !== "t";
 
   return (
     <Container onClick={cerrarDesplegables} $isBalanceActive={isBalanceActive}>
-      {openRegistro && (
-        <RegistrarMovimientos
-          accion={accion}
-          dataSelect={dataSelect}
-          state={openRegistro}
-          setState={() => setOpenRegistro(!openRegistro)}
-        />
-      )}
+      <RegistrarMovimientos
+        accion={accion}
+        dataSelect={dataSelect}
+        state={openRegistro}
+        setState={() => setOpenRegistro(false)}
+        tipoRegistro={tipoRegistro}
+      />
 
       <header className="header">
-        <Header stateConfig={{ state: state, setState: openUser }} />
+        <Header stateConfig={{ state: state, setState: openUser }} eyebrow="Movimientos" title={tituloMovimientos} />
       </header>
 
       <section className="hero">
-        <HeroCopy>
-          <Eyebrow>Movimientos</Eyebrow>
-          <h1>{tipoActual.text}s con más contexto</h1>
-          <p>{typeDescriptionMap[tipo.tipo as TipoMovimiento]}</p>
-        </HeroCopy>
+        <FilterBar
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <TypeTabs aria-label="Tipo de movimiento">
+            {tiposFiltro.map((item) => (
+              <TypeTabButton
+                key={item.tipo}
+                type="button"
+                $active={tipo.tipo === item.tipo}
+                $bgcolor={item.bgcolor}
+                $textcolor={item.color}
+                onClick={() => cambiarTipo(item)}
+              >
+                <span>{item.icono}</span>
+                <strong>{item.text}</strong>
+              </TypeTabButton>
+            ))}
+          </TypeTabs>
+
+          <div className="filter-row">
+            <FilterSearch>
+              <InputBuscadorLista
+                placeholder="Buscar por descripción o monto..."
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiltros(e.target.value, filtroCategoria)}
+              />
+            </FilterSearch>
+
+            {mostrarFiltroCategoria && (
+              <CategoryFilter>
+                <ContentFiltro>
+                  <Selector
+                    color={tipo.color}
+                    texto1="Categoría: "
+                    texto2={filtroCategoria || "Todas"}
+                    funcion={() => setStateListaCategorias(!stateListaCategorias)}
+                    state={stateListaCategorias}
+                  />
+                  {stateListaCategorias && (
+                    <ListaGenerica
+                      data={[
+                        { icono: "📁", descripcion: "Todas" },
+                        ...(datacategoria?.map(c => ({ icono: c.icono, descripcion: c.descripcion })) || [])
+                      ]}
+                      setState={() => setStateListaCategorias(false)}
+                      funcion={(item) => setFiltros(filtroDescripcion, item.descripcion === "Todas" ? "" : item.descripcion)}
+                    />
+                  )}
+                </ContentFiltro>
+              </CategoryFilter>
+            )}
+          </div>
+        </FilterBar>
 
         <HeroStats>
           <span>Movimientos visibles</span>
@@ -215,141 +260,36 @@ export const MovimientosTemplate = (): JSX.Element => {
         </HeroStats>
       </section>
 
-      <section className="toolbar">
-        <ToolbarCard
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          <ToolbarLabel>Tipo de movimiento</ToolbarLabel>
-          <ToolbarDescription>
-            Alterná entre ingresos, gastos, balance y transferencias sin perder el contexto del período.
-          </ToolbarDescription>
-          <ToolbarActions>
-            <ContentFiltros>
-              <DesktopOnly>
-                <div className="filtros-activo">
-                  <BtnIcono
-                    active
-                    icono={tipoActual.icono}
-                    textcolor={tipoActual.color}
-                    bgcolor={tipoActual.bgcolor}
-                    text={`${tipoActual.text}s`}
-                    funcion={() => { }}
-                  />
-                </div>
-
-                <div className="filtros-secundarios">
-                  <BtnIcono
-                    icono={tipoAlterno.icono}
-                    textcolor={tipoAlterno.color}
-                    bgcolor={tipoAlterno.bgcolor}
-                    text={`Ver ${tipoAlterno.text}s`}
-                    funcion={() => { cambiarTipo(accionAlterno) }}
-                  />
-
-                  <BtnIcono
-                    icono={tipoTercero.icono}
-                    textcolor={tipoTercero.color}
-                    bgcolor={tipoTercero.bgcolor}
-                    text={`Ver ${tipoTercero.text}s`}
-                    funcion={() => cambiarTipo(accionTercero)}
-                  />
-                </div>
-              </DesktopOnly>
-
-              <MobileOnly
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
+      <FloatingActionMenu
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        {stateAccionesRegistro && (
+          <div className="opciones">
+            {[gastos, ingresos, transferencias].map((item) => (
+              <FloatingActionOption
+                key={item.tipo}
+                type="button"
+                onClick={() => nuevoRegistro(item)}
+                $bgcolor={item.bgcolor}
+                $textcolor={item.color}
               >
-                <Btndesplegable
-                  icono={tipoActual.icono}
-                  textcolor={tipoActual.color}
-                  bgcolor={tipoActual.bgcolor}
-                  text={tipoActual.text}
-                  active
-                  funcion={openTipo}
-                />
-                {stateTipo && (
-                  <ListaMenuDesplegable
-                    data={[ingresos, gastos, balance, transferencias]}
-                    top="112%"
-                    funcion={(p) => cambiarTipo(p as Tipo)}
-                  />
-                )}
-              </MobileOnly>
-            </ContentFiltros>
-          </ToolbarActions>
-        </ToolbarCard>
-
-        <ActionCard>
-          <ToolbarLabel>Nuevo movimiento</ToolbarLabel>
-          <ToolbarDescription>
-            Registrá un movimiento manual para mantener el período al día desde esta misma pantalla.
-          </ToolbarDescription>
-          <PrimaryAction
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              nuevoRegistro();
-            }}
-            $bgcolor={tipo.bgcolor}
-            $textcolor={tipo.color}
-          >
-            <span className="icon">
-              <v.agregar />
-            </span>
-            <span>Agregar Movimiento</span>
-          </PrimaryAction>
-        </ActionCard>
-      </section>
-
-      <section className="busqueda">
-        <SearchCard>
-          <div>
-            <ToolbarLabel>Búsqueda rápida</ToolbarLabel>
-            <ToolbarDescription>
-              Encontrá un movimiento por descripción o monto sin salir del período actual.
-            </ToolbarDescription>
+                <span>{item.icono}</span>
+                <strong>{obtenerTextoNuevoMovimiento(item)}</strong>
+              </FloatingActionOption>
+            ))}
           </div>
-          <InputBuscadorLista
-            placeholder="Buscar por descripción o monto..."
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiltros(e.target.value, filtroCategoria)}
-          />
-        </SearchCard>
-        <SearchCard
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
+        )}
+        <FloatingActionToggle
+          type="button"
+          onClick={() => setStateAccionesRegistro(!stateAccionesRegistro)}
+          aria-label="Registrar movimiento"
+          aria-expanded={stateAccionesRegistro}
         >
-          <div>
-            <ToolbarLabel>Filtrar por categoría</ToolbarLabel>
-            <ToolbarDescription>
-              Enfocá la lista en una categoría puntual para revisar mejor el detalle.
-            </ToolbarDescription>
-          </div>
-          <ContentFiltro>
-            <Selector
-              color={tipo.color}
-              texto1="Categoría: "
-              texto2={filtroCategoria || "Todas"}
-              funcion={() => setStateListaCategorias(!stateListaCategorias)}
-              state={stateListaCategorias}
-            />
-            {stateListaCategorias && (
-              <ListaGenerica
-                data={[
-                  { icono: "📁", descripcion: "Todas" },
-                  ...(datacategoria?.map(c => ({ icono: c.icono, descripcion: c.descripcion })) || [])
-                ]}
-                setState={() => setStateListaCategorias(false)}
-                funcion={(item) => setFiltros(filtroDescripcion, item.descripcion === "Todas" ? "" : item.descripcion)}
-              />
-            )}
-          </ContentFiltro>
-        </SearchCard>
-      </section>
+          <v.agregar />
+        </FloatingActionToggle>
+      </FloatingActionMenu>
 
       <section className="totales">
         <CardTotales
@@ -406,7 +346,7 @@ export const MovimientosTemplate = (): JSX.Element => {
 
         {(tipo.tipo == "t" || tipo.tipo == "b")
           && filteredDatamovimientos.t?.length > 0 &&
-          <TablaMovimientos
+          <TablaTransferencias
             titulo={"Transferencias"}
             tipo={transferencias}
             color={v.colorTransferencias}

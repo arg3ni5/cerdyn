@@ -22,8 +22,6 @@ export const Container = styled.div<ContainerProps>`
   grid-template:
     "header" 100px
     "hero" auto
-    "toolbar" auto
-    "busqueda" auto
     "totales" auto
     "calendario" auto
     "main" auto
@@ -38,30 +36,9 @@ export const Container = styled.div<ContainerProps>`
   .hero {
     grid-area: hero;
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 0.32fr);
     gap: 18px;
-
-    @media (max-width: 900px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .toolbar {
-    grid-area: toolbar;
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.9fr);
-    gap: 18px;
-
-    @media (max-width: 980px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .busqueda {
-    grid-area: busqueda;
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.7fr);
-    gap: 18px;
+    align-items: stretch;
 
     @media (max-width: 900px) {
       grid-template-columns: 1fr;
@@ -274,6 +251,197 @@ export const PrimaryAction = styled.button<AccentProps>`
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 18px 32px rgba(0, 0, 0, 0.12);
+    filter: brightness(1.02);
+  }
+`;
+
+export const FilterBar = styled.div`
+  min-width: 0;
+  padding: 14px;
+  border-radius: 24px;
+  background: ${({ theme }) => theme.bg3};
+  box-shadow: 0 18px 36px rgba(18, 47, 79, 0.08);
+  display: grid;
+  gap: 12px;
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(210px, auto);
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  @media (max-width: 720px) {
+    .filter-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    border-radius: 20px;
+  }
+`;
+
+export const FilterSearch = styled.div`
+  min-width: 0;
+
+  input {
+    min-height: 46px;
+  }
+`;
+
+export const TypeTabs = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+
+  @media (max-width: 760px) {
+    display: flex;
+    overflow-x: auto;
+    padding: 2px 2px 6px;
+    scrollbar-width: thin;
+  }
+`;
+
+export const TypeTabButton = styled.button<AccentProps & { $active: boolean }>`
+  border: 1px solid ${({ $active, $bgcolor }) => ($active ? "transparent" : $bgcolor)};
+  border-radius: 999px;
+  padding: 10px 13px;
+  min-height: 44px;
+  min-width: 0;
+  background: ${({ $active, $bgcolor }) => ($active ? $bgcolor : "transparent")};
+  color: ${({ $active, $textcolor, theme }) => ($active ? $textcolor : theme.text)};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+
+  span {
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  strong {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    background: ${({ $bgcolor }) => $bgcolor};
+    color: ${({ $textcolor }) => $textcolor};
+  }
+
+  @media (max-width: 760px) {
+    flex: 0 0 auto;
+    min-width: 132px;
+  }
+
+  @media (max-width: 420px) {
+    min-width: 118px;
+    padding-inline: 11px;
+  }
+`;
+
+export const CategoryFilter = styled.div`
+  min-width: 210px;
+
+  > div {
+    width: 100%;
+  }
+
+  @media (max-width: 720px) {
+    min-width: 0;
+  }
+`;
+
+export const FloatingActionMenu = styled.div`
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+
+  .opciones {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  @media (min-width: 768px) {
+    right: 32px;
+    bottom: 32px;
+  }
+`;
+
+export const FloatingActionToggle = styled.button`
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: #e14e19;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(225, 78, 25, 0.28);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  &:hover {
+    transform: scale(1.05);
+    background: #c44214;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+export const FloatingActionOption = styled.button<AccentProps>`
+  border: none;
+  border-radius: 18px;
+  padding: 12px 14px;
+  min-width: 168px;
+  background: ${({ $bgcolor }) => $bgcolor};
+  color: ${({ $textcolor }) => $textcolor};
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+  transition: transform 0.2s ease, filter 0.2s ease;
+
+  span {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  strong {
+    font-size: 14px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
     filter: brightness(1.02);
   }
 `;
