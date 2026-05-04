@@ -3,6 +3,7 @@ import {
   AiOutlineApartment,
   AiOutlineSetting,
   AiOutlineDashboard,
+  AiOutlineCloudUpload,
 } from "react-icons/ai";
 import { MdAccountBalance, MdOutlineAnalytics } from "react-icons/md";
 import { TbPig } from "react-icons/tb"
@@ -137,6 +138,11 @@ export const LinksArray = [
     label: "Movimientos",
     icon: <AiOutlineApartment />,
     to: "/movimientos",
+  },
+  {
+    label: "Importar",
+    icon: <AiOutlineCloudUpload />,
+    to: "/movimientos/importar",
   },
   {
     label: "Informes",
