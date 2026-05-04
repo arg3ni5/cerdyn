@@ -107,6 +107,23 @@ export const TablaMovimientos = ({
     return false;
   };
 
+  const esTransferencia = tipo.tipo === "t";
+  const obtenerCuentaOrigen = (item: MovimientosMesAnio[number]): string => {
+    const movimiento = item as MovimientosMesAnio[number] & {
+      cuenta_origen?: string | null;
+      cuentaorigen?: string | null;
+    };
+    return movimiento.cuenta_origen || movimiento.cuentaorigen || (item.idcuenta_origen ? `Cuenta #${item.idcuenta_origen}` : "-");
+  };
+
+  const obtenerCuentaDestino = (item: MovimientosMesAnio[number]): string => {
+    const movimiento = item as MovimientosMesAnio[number] & {
+      cuenta_destino?: string | null;
+      cuentadestino?: string | null;
+    };
+    return movimiento.cuenta_destino || movimiento.cuentadestino || (item.idcuenta_destino ? `Cuenta #${item.idcuenta_destino}` : "-");
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -128,8 +145,8 @@ export const TablaMovimientos = ({
               <tr>
                 <th scope="col">Pagado</th>
                 <th scope="col">Descripcion</th>
-                <th scope="col">Categoria</th>
-                <th scope="col">Cuenta</th>
+                <th scope="col">{esTransferencia ? "Origen" : "Categoria"}</th>
+                <th scope="col">{esTransferencia ? "Destino" : "Cuenta"}</th>
                 <th scope="col">Valor</th>
                 <th scope="col"></th>
               </tr>
@@ -170,8 +187,17 @@ export const TablaMovimientos = ({
                       <td data-title="Descripcion">
                         {item.descripcion}
                       </td>
-                      <td data-title="Categoria">{item.categoria}</td>
-                      <td data-title="Cuenta">{item.cuenta}</td>
+                      {esTransferencia ? (
+                        <>
+                          <td data-title="Origen">{obtenerCuentaOrigen(item)}</td>
+                          <td data-title="Destino">{obtenerCuentaDestino(item)}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td data-title="Categoria">{item.categoria}</td>
+                          <td data-title="Cuenta">{item.cuenta}</td>
+                        </>
+                      )}
                       <td data-title="Monto">{item.valorymoneda}</td>
                       <td data-title="Acciones">
                         <ContentAccionesTabla

@@ -44,6 +44,7 @@ export * from './components/organismos/tablas/ContentAccionesTabla';
 export * from './components/organismos/tablas/Paginacion';
 export * from './components/organismos/tablas/TablaCategorias';
 export * from './components/organismos/tablas/TablaMovimientos';
+export * from './components/organismos/tablas/TablaTransferencias';
 export * from './components/templates/CategoriasTemplate';
 export * from './components/templates/ConexionesTemplate';
 export * from './components/templates/ConfiguracionTemplate';
