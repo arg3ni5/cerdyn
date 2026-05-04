@@ -183,6 +183,38 @@ npm test
 
 **Nota**: Actualmente se requiere instalar vitest y @testing-library/react para ejecutar tests.
 
+## 📥 Importar movimientos desde Excel (XLSX)
+
+Se agregó la ruta **`/movimientos/importar`** para importar movimientos en 3 pasos:
+
+1. **Subir archivo** y descargar plantilla oficial.
+2. **Previsualizar + validar** filas detectadas.
+3. **Resolver errores + importar** en lotes.
+
+### Plantilla oficial
+
+- Hoja `Movimientos` con columnas:
+  - `fecha` (YYYY-MM-DD)
+  - `descripcion`
+  - `tipo` (`ingreso` o `gasto`)
+  - `valor` (> 0)
+  - `idcategoria` (obligatorio)
+  - `idcuenta` (obligatorio)
+- Hoja `Categorias` (referencia):
+  - `tipo`
+  - `idcategoria`
+  - `descripcion`
+- Hoja `Cuentas` (referencia):
+  - `idcuenta`
+  - `descripcion`
+
+### Reglas clave
+
+- **No se admiten transferencias** en este flujo de importación.
+- La categoría debe existir para el usuario actual y coincidir con el tipo de movimiento.
+- La cuenta (`idcuenta`) es obligatoria y debe pertenecer al usuario actual.
+- Si hay categorías inválidas/faltantes, se pueden corregir por grupos con “Aplicar a todas”.
+
 ## 📝 Scripts disponibles
 
 ```json

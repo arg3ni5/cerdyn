@@ -16,6 +16,9 @@ const Categorias = lazy(
 const Movimientos = lazy(
   async () => await import("../pages/Movimientos").then((module) => ({ default: module.Movimientos }))
 );
+const ImportarMovimientos = lazy(
+  async () => await import("../pages/ImportarMovimientos").then((module) => ({ default: module.ImportarMovimientos }))
+);
 const Informes = lazy(
   async () => await import("../pages/Informes").then((module) => ({ default: module.Informes }))
 );
@@ -48,6 +51,7 @@ export const MyRoutes = ({ isLoading }: ProtectedRouteProps) => {
           <Route path="/configurar" element={<Configuracion />} />
           <Route path="/categorias" element={<Categorias />} />
           <Route path="/movimientos" element={<Movimientos />} />
+          <Route path="/movimientos/importar" element={<ImportarMovimientos />} />
           <Route path="/informes" element={<Informes />} />
           <Route path="/acercade" element={<Home />} />
         </Route>

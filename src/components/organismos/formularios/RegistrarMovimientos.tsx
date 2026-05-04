@@ -1,6 +1,8 @@
 import { JSX, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Switch } from "@mui/material";
+import { motion, AnimatePresence } from "motion/react";
+import { X } from "lucide-react";
 import {
   useMovimientosStore,
   useCategoriasStore,
@@ -26,7 +28,7 @@ import {
 import { ConfigRecurrencia } from "../../../store/MovimientosStore";
 import { showConfirmDialog } from "../../../utils/messages";
 import { useQuery } from "@tanstack/react-query";
-import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, Container, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
+import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, CloseButton, Container, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
 
 interface RegistrarMovimientosProps {
   setState: () => void;
@@ -54,7 +56,7 @@ const esPagado = (estado: unknown): boolean => {
   return false;
 };
 
-export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, accion }: RegistrarMovimientosProps): JSX.Element => {
+export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movimiento, accion }: RegistrarMovimientosProps): JSX.Element => {
   const { cuentaItemSelect, mostrarCuentas, selectCuenta } = useCuentaStore();
   const { selectTipoMovimiento } = useOperaciones();
   const { idusuario } = useUsuariosStore();
@@ -415,376 +417,394 @@ export const RegistrarMovimientos = ({ setState, dataSelect = {} as Movimiento, 
   }, [accion, dataSelect?.idcategoria, (dataSelect as Movimiento & { categoria?: string })?.categoria, categorias, selectCategoria]);
 
   return (
-    <Container onClick={setState}>
-      <div
-        className="sub-contenedor"
-        onClick={(e) => { e.stopPropagation(); }}>
-        <div className="encabezado">
-          <ContenedorDropdown>
-            <Selector
-              color="#e14e19"
-              texto1={tipoMovimiento?.text ? accion + " " : ""}
-              texto2={tipoMovimiento?.text || "Seleccione un tipo"}
-              funcion={() => setStateTipo(!stateTipo)}
-            />
-
-            {stateTipo && (
-              <ListaGenerica
-                placement="down"
-                mobilePlacement="down"
-                btnClose={false}
-                scroll="hidden"
-                setState={() => setStateTipo(!stateTipo)}
-                data={DataDesplegableMovimientos.filter(item => item.tipo != "b").map(item => ({
-                  descripcion: item.text,
-                  ...item,
-                }))}
-                funcion={cambiarTipo}
-              />
-            )}
-          </ContenedorDropdown>
-        </div>
-
-        <form onSubmit={accion == "Nuevo" ? handleSubmit(insertar) : handleSubmit(actualizar)} className="formulario">
-          <section>
-            <WrapperPagoFecha>
-              <ContainerFuepagado>
-                <span>{<v.iconocheck />}</span>
-                <label>Fue pagado:</label>
-                <Switch
-                  onChange={estadoControl}
-                  checked={estado}
-                  color="warning"
+    <AnimatePresence>
+      {state && (
+        <Container
+          as={motion.div}
+          onClick={setState}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="sub-contenedor"
+            onClick={(e) => { e.stopPropagation(); }}
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <div className="encabezado">
+              <ContenedorDropdown>
+                <Selector
+                  color="#e14e19"
+                  texto1={tipoMovimiento?.text ? accion + " " : ""}
+                  texto2={tipoMovimiento?.text || "Seleccione un tipo"}
+                  funcion={() => setStateTipo(!stateTipo)}
                 />
-              </ContainerFuepagado>
-              <ContainerFecha>
-                <label>Fecha:</label>
-                <input
-                  type="date"
-                  {...register("fecha", { required: true })}
-                ></input>
-                {errors.fecha?.type === "required" && (<p>El campo es requerido</p>)}
-              </ContainerFecha>
-            </WrapperPagoFecha>
 
-            <ContainerMonto>
-              <label>Monto:</label>
-              <InputNumber
-                defaultValue={dataSelect.valor!}
-                register={register}
-                placeholder="Ingrese monto"
-                errors={errors}
-                icono={<v.iconocalculadora />}
-              />
-            </ContainerMonto>
-
-            <div>
-              <label>Descripción:</label>
-              <InputText
-                defaultValue={dataSelect.descripcion!}
-                register={register}
-                placeholder="Ingrese una descripcion"
-                errors={errors}
-              />
+                {stateTipo && (
+                  <ListaGenerica
+                    placement="down"
+                    mobilePlacement="down"
+                    btnClose={false}
+                    scroll="hidden"
+                    setState={() => setStateTipo(!stateTipo)}
+                    data={DataDesplegableMovimientos.filter(item => item.tipo != "b").map(item => ({
+                      descripcion: item.text,
+                      ...item,
+                    }))}
+                    funcion={cambiarTipo}
+                  />
+                )}
+              </ContenedorDropdown>
+              <CloseButton onClick={setState} type="button">
+                <X size={24} />
+              </CloseButton>
             </div>
 
-            {esTransferencia ? (
-              <>
-                <ContenedorDropdown $active={stateCuentaOrigen}>
-                  <label>Cuenta origen: </label>
-                  <Selector
-                    color="#3b82f6"
-                    texto1={cuentaOrigen?.icono}
-                    texto2={cuentaOrigen?.descripcion || "Seleccionar cuenta origen"}
-                    funcion={toggleCuentaOrigen}
-                  />
-                  {stateCuentaOrigen && (
-                    <ListaGenerica
-                      placement="down"
-                      mobilePlacement="up"
-                      scroll="auto"
-                      filterable
-                      filterPlaceholder="Buscar cuenta origen..."
-                      emptyMessage="No hay cuentas origen que coincidan."
-                      filterBy={["descripcion"]}
-                      setState={() => setStateCuentaOrigen(!stateCuentaOrigen)}
-                      data={cuentas?.map(cuenta => ({
-                        ...cuenta,
-                        descripcion: cuenta.descripcion || '',
-                        icono: cuenta.icono || ''
-                      })) || []}
-                      funcion={(c) => { setCuentaOrigen(c as Cuenta); setStateCuentaOrigen(false); }}
-                    />
-                  )}
-                </ContenedorDropdown>
-
-                <ContenedorDropdown $active={stateCuentaDestino}>
-                  <label>Cuenta destino: </label>
-                  <Selector
-                    color="#3b82f6"
-                    texto1={cuentaDestino?.icono}
-                    texto2={cuentaDestino?.descripcion || "Seleccionar cuenta destino"}
-                    funcion={toggleCuentaDestino}
-                  />
-                  {stateCuentaDestino && (
-                    <ListaGenerica
-                      placement="up"
-                      mobilePlacement="up"
-                      scroll="auto"
-                      filterable
-                      filterPlaceholder="Buscar cuenta destino..."
-                      emptyMessage="No hay cuentas destino que coincidan."
-                      filterBy={["descripcion"]}
-                      setState={() => setStateCuentaDestino(!stateCuentaDestino)}
-                      data={cuentas?.filter(c => c.id !== cuentaOrigen?.id).map(cuenta => ({
-                        ...cuenta,
-                        descripcion: cuenta.descripcion || '',
-                        icono: cuenta.icono || ''
-                      })) || []}
-                      funcion={(c) => { setCuentaDestino(c as Cuenta); setStateCuentaDestino(false); }}
-                    />
-                  )}
-                </ContenedorDropdown>
-              </>
-            ) : (
-              <>
-                <ContenedorDropdown $active={stateCuenta}>
-                  <label>Cuenta: </label>
-                  <Selector
-                    color="#e14e19"
-                    texto1={cuentaItemSelect?.icono}
-                    texto2={cuentaItemSelect?.descripcion || "Seleccionar Cuenta"}
-                    funcion={toggleCuenta}
-                  />
-                  {stateCuenta && (
-                    <ListaGenerica
-                      placement="down"
-                      mobilePlacement="up"
-                      scroll="auto"
-                      filterable
-                      filterPlaceholder="Buscar cuenta..."
-                      emptyMessage="No hay cuentas que coincidan."
-                      filterBy={["descripcion"]}
-                      setState={() => setStateCuenta(!stateCuenta)}
-                      data={cuentas?.map(cuenta => ({
-                        ...cuenta,
-                        descripcion: cuenta.descripcion || '',
-                        icono: cuenta.icono || ''
-                      })) || []}
-                      funcion={selectCuenta}
-                    />
-                  )}
-                </ContenedorDropdown>
-
-                <ContenedorDropdown $active={stateCategorias}>
-                  <label>Categoria: </label>
-                  <Selector
-                    color="#e14e19"
-                    texto1={categoriaItemSelect?.icono}
-                    texto2={categoriaItemSelect?.descripcion || "Seleccionar Categoria"}
-                    funcion={toggleCategorias}
-                  />
-
-                  {stateCategorias && (
-                    <ListaGenerica
-                      placement="up"
-                      mobilePlacement="up"
-                      scroll="auto"
-                      filterable
-                      filterPlaceholder="Buscar categoría..."
-                      emptyMessage="No hay categorías que coincidan."
-                      filterBy={["descripcion"]}
-                      setState={() => setStateCategorias(!stateCategorias)}
-                      data={categorias?.map(cat => ({
-                        ...cat,
-                        descripcion: cat.descripcion || '',
-                        icono: cat.icono || ''
-                      })) || []}
-                      funcion={selectCategoria}
-                    />
-                  )}
-                </ContenedorDropdown>
-              </>
-            )}
-
-            {accion === "Nuevo" && (
-              <ContainerRecurrencia>
-                <FilaRecurrencia>
+            <form onSubmit={accion == "Nuevo" ? handleSubmit(insertar) : handleSubmit(actualizar)} className="formulario">
+              <section>
+                <WrapperPagoFecha>
                   <ContainerFuepagado>
-                    <label>Recurrente:</label>
+                    <span>{<v.iconocheck />}</span>
+                    <label>Fue pagado:</label>
                     <Switch
-                      checked={esRecurrente}
-                      onChange={(e) => {
-                        setEsRecurrente(e.target.checked);
-                        if (!e.target.checked) {
-                          setPreviewFechas([]);
-                        }
-                        setRecurrenciaColapsada(false);
-                      }}
+                      onChange={estadoControl}
+                      checked={estado}
                       color="warning"
                     />
                   </ContainerFuepagado>
-                  {esRecurrente && (
-                    <AccionesRecurrencia>
-                      <BtnPreview
-                        type="button"
-                        onClick={() => {
-                          actualizarPreview();
-                          setRecurrenciaColapsada(true);
-                        }}
-                      >
-                        Previsualizar
-                      </BtnPreview>
-                      <BtnToggleRecurrencia
-                        type="button"
-                        onClick={() => setRecurrenciaColapsada(!recurrenciaColapsada)}
-                      >
-                        {recurrenciaColapsada ? "Mostrar opciones" : "Ocultar opciones"}
-                      </BtnToggleRecurrencia>
-                    </AccionesRecurrencia>
-                  )}
-                </FilaRecurrencia>
+                  <ContainerFecha>
+                    <label>Fecha:</label>
+                    <input
+                      type="date"
+                      {...register("fecha", { required: true })}
+                    ></input>
+                    {errors.fecha?.type === "required" && (<p>El campo es requerido</p>)}
+                  </ContainerFecha>
+                </WrapperPagoFecha>
 
-                {esRecurrente && !recurrenciaColapsada && (
-                  <ContainerRecurrenciaOpciones>
-                    <ContenedorDropdown>
-                      <label>Modo:</label>
+                <ContainerMonto>
+                  <label>Monto:</label>
+                  <InputNumber
+                    defaultValue={dataSelect.valor!}
+                    register={register}
+                    placeholder="Ingrese monto"
+                    errors={errors}
+                    icono={<v.iconocalculadora />}
+                  />
+                </ContainerMonto>
+
+                <div>
+                  <label>Descripción:</label>
+                  <InputText
+                    defaultValue={dataSelect.descripcion!}
+                    register={register}
+                    placeholder="Ingrese una descripcion"
+                    errors={errors}
+                  />
+                </div>
+
+                {esTransferencia ? (
+                  <>
+                    <ContenedorDropdown $active={stateCuentaOrigen}>
+                      <label>Cuenta origen: </label>
                       <Selector
-                        color="#e14e19"
-                        texto2={modoRecurrencia === 'intervalo' ? 'Cada N días' : 'Día X de cada mes'}
-                        funcion={() => setStateModoRecurrencia(!stateModoRecurrencia)}
-                        state={stateModoRecurrencia}
+                        color="#3b82f6"
+                        texto1={cuentaOrigen?.icono}
+                        texto2={cuentaOrigen?.descripcion || "Seleccionar cuenta origen"}
+                        funcion={toggleCuentaOrigen}
                       />
-                      {stateModoRecurrencia && (
+                      {stateCuentaOrigen && (
                         <ListaGenerica
                           placement="down"
-                          mobilePlacement="down"
-                          scroll="hidden"
-                          btnClose={false}
-                          setState={() => setStateModoRecurrencia(!stateModoRecurrencia)}
-                          data={opcionesModoRecurrencia}
-                          funcion={(item) => {
-                            setModoRecurrencia(item.value);
-                            setPreviewFechas([]);
-                          }}
+                          mobilePlacement="up"
+                          scroll="auto"
+                          filterable
+                          filterPlaceholder="Buscar cuenta origen..."
+                          emptyMessage="No hay cuentas origen que coincidan."
+                          filterBy={["descripcion"]}
+                          setState={() => setStateCuentaOrigen(!stateCuentaOrigen)}
+                          data={cuentas?.map(cuenta => ({
+                            ...cuenta,
+                            descripcion: cuenta.descripcion || '',
+                            icono: cuenta.icono || ''
+                          })) || []}
+                          funcion={(c) => { setCuentaOrigen(c as Cuenta); setStateCuentaOrigen(false); }}
                         />
                       )}
                     </ContenedorDropdown>
 
-                    {modoRecurrencia === 'intervalo' && (
-                      <FilaCamposRecurrencia>
-                        <ContainerMonto>
-                          <label>Cada (días):</label>
-                          <InputText
-                            type="number"
-                            name="intervaloDias"
-                            defaultValue={intervaloDias}
-                            register={register}
-                            errors={errors}
-                            placeholder="1 - 365"
-                          />
-                        </ContainerMonto>
-                        <ContainerMonto>
-                          <label>Repeticiones <small>(mín. 2)</small>:</label>
-                          <InputText
-                            type="number"
-                            name="repeticiones"
-                            defaultValue={repeticiones}
-                            register={register}
-                            errors={errors}
-                            placeholder="2 - 60"
-                          />
-                        </ContainerMonto>
-                      </FilaCamposRecurrencia>
-                    )}
+                    <ContenedorDropdown $active={stateCuentaDestino}>
+                      <label>Cuenta destino: </label>
+                      <Selector
+                        color="#3b82f6"
+                        texto1={cuentaDestino?.icono}
+                        texto2={cuentaDestino?.descripcion || "Seleccionar cuenta destino"}
+                        funcion={toggleCuentaDestino}
+                      />
+                      {stateCuentaDestino && (
+                        <ListaGenerica
+                          placement="up"
+                          mobilePlacement="up"
+                          scroll="auto"
+                          filterable
+                          filterPlaceholder="Buscar cuenta destino..."
+                          emptyMessage="No hay cuentas destino que coincidan."
+                          filterBy={["descripcion"]}
+                          setState={() => setStateCuentaDestino(!stateCuentaDestino)}
+                          data={cuentas?.filter(c => c.id !== cuentaOrigen?.id).map(cuenta => ({
+                            ...cuenta,
+                            descripcion: cuenta.descripcion || '',
+                            icono: cuenta.icono || ''
+                          })) || []}
+                          funcion={(c) => { setCuentaDestino(c as Cuenta); setStateCuentaDestino(false); }}
+                        />
+                      )}
+                    </ContenedorDropdown>
+                  </>
+                ) : (
+                  <>
+                    <ContenedorDropdown $active={stateCuenta}>
+                      <label>Cuenta: </label>
+                      <Selector
+                        color="#e14e19"
+                        texto1={cuentaItemSelect?.icono}
+                        texto2={cuentaItemSelect?.descripcion || "Seleccionar Cuenta"}
+                        funcion={toggleCuenta}
+                      />
+                      {stateCuenta && (
+                        <ListaGenerica
+                          placement="down"
+                          mobilePlacement="up"
+                          scroll="auto"
+                          filterable
+                          filterPlaceholder="Buscar cuenta..."
+                          emptyMessage="No hay cuentas que coincidan."
+                          filterBy={["descripcion"]}
+                          setState={() => setStateCuenta(!stateCuenta)}
+                          data={cuentas?.map(cuenta => ({
+                            ...cuenta,
+                            descripcion: cuenta.descripcion || '',
+                            icono: cuenta.icono || ''
+                          })) || []}
+                          funcion={selectCuenta}
+                        />
+                      )}
+                    </ContenedorDropdown>
 
-                    {modoRecurrencia === 'mensual' && (
-                      <>
-                        <FilaCamposRecurrencia>
-                          <ContainerMonto>
-                            <label>Día del mes:</label>
-                            <InputText
-                              type="number"
-                              name="diaMes"
-                              defaultValue={diaMes}
-                              register={register}
-                              errors={errors}
-                              placeholder="1 - 31"
-                            />
-                          </ContainerMonto>
-                          <ContainerMonto>
-                            <label>Repeticiones <small>(mín. 2)</small>:</label>
-                            <InputText
-                              type="number"
-                              name="repeticiones"
-                              defaultValue={repeticiones}
-                              register={register}
-                              errors={errors}
-                              placeholder="2 - 60"
-                            />
-                          </ContainerMonto>
-                        </FilaCamposRecurrencia>
+                    <ContenedorDropdown $active={stateCategorias}>
+                      <label>Categoria: </label>
+                      <Selector
+                        color="#e14e19"
+                        texto1={categoriaItemSelect?.icono}
+                        texto2={categoriaItemSelect?.descripcion || "Seleccionar Categoria"}
+                        funcion={toggleCategorias}
+                      />
+
+                      {stateCategorias && (
+                        <ListaGenerica
+                          placement="up"
+                          mobilePlacement="up"
+                          scroll="auto"
+                          filterable
+                          filterPlaceholder="Buscar categoría..."
+                          emptyMessage="No hay categorías que coincidan."
+                          filterBy={["descripcion"]}
+                          setState={() => setStateCategorias(!stateCategorias)}
+                          data={categorias?.map(cat => ({
+                            ...cat,
+                            descripcion: cat.descripcion || '',
+                            icono: cat.icono || ''
+                          })) || []}
+                          funcion={selectCategoria}
+                        />
+                      )}
+                    </ContenedorDropdown>
+                  </>
+                )}
+
+                {accion === "Nuevo" && (
+                  <ContainerRecurrencia>
+                    <FilaRecurrencia>
+                      <ContainerFuepagado>
+                        <label>Recurrente:</label>
+                        <Switch
+                          checked={esRecurrente}
+                          onChange={(e) => {
+                            setEsRecurrente(e.target.checked);
+                            if (!e.target.checked) {
+                              setPreviewFechas([]);
+                            }
+                            setRecurrenciaColapsada(false);
+                          }}
+                          color="warning"
+                        />
+                      </ContainerFuepagado>
+                      {esRecurrente && (
+                        <AccionesRecurrencia>
+                          <BtnPreview
+                            type="button"
+                            onClick={() => {
+                              actualizarPreview();
+                              setRecurrenciaColapsada(true);
+                            }}
+                          >
+                            Previsualizar
+                          </BtnPreview>
+                          <BtnToggleRecurrencia
+                            type="button"
+                            onClick={() => setRecurrenciaColapsada(!recurrenciaColapsada)}
+                          >
+                            {recurrenciaColapsada ? "Mostrar opciones" : "Ocultar opciones"}
+                          </BtnToggleRecurrencia>
+                        </AccionesRecurrencia>
+                      )}
+                    </FilaRecurrencia>
+
+                    {esRecurrente && !recurrenciaColapsada && (
+                      <ContainerRecurrenciaOpciones>
                         <ContenedorDropdown>
-                          <label>Inicio:</label>
+                          <label>Modo:</label>
                           <Selector
                             color="#e14e19"
-                            texto2={politica === 'este_mes' ? 'Este mes' : 'Próximo mes'}
-                            funcion={() => setStatePoliticaRecurrencia(!statePoliticaRecurrencia)}
-                            state={statePoliticaRecurrencia}
+                            texto2={modoRecurrencia === 'intervalo' ? 'Cada N días' : 'Día X de cada mes'}
+                            funcion={() => setStateModoRecurrencia(!stateModoRecurrencia)}
+                            state={stateModoRecurrencia}
                           />
-                          {statePoliticaRecurrencia && (
+                          {stateModoRecurrencia && (
                             <ListaGenerica
                               placement="down"
                               mobilePlacement="down"
                               scroll="hidden"
                               btnClose={false}
-                              setState={() => setStatePoliticaRecurrencia(!statePoliticaRecurrencia)}
-                              data={opcionesPoliticaRecurrencia}
+                              setState={() => setStateModoRecurrencia(!stateModoRecurrencia)}
+                              data={opcionesModoRecurrencia}
                               funcion={(item) => {
-                                setPolitica(item.value);
+                                setModoRecurrencia(item.value);
                                 setPreviewFechas([]);
                               }}
                             />
                           )}
                         </ContenedorDropdown>
-                        <MensualHint>La fecha seleccionada arriba no afecta al modo mensual; las fechas se calculan desde el mes de inicio.</MensualHint>
-                      </>
-                    )}
-                  </ContainerRecurrenciaOpciones>
-                )}
 
-                {esRecurrente && previewFechas.length > 0 && (
-                  <ContainerPreview>
-                    <label>Fechas a generar ({previewFechas.length}):</label>
-                    <ul>
-                      {previewFechas.map((f, i) => (
-                        <li key={i}>{f}</li>
-                      ))}
-                    </ul>
-                  </ContainerPreview>
+                        {modoRecurrencia === 'intervalo' && (
+                          <FilaCamposRecurrencia>
+                            <ContainerMonto>
+                              <label>Cada (días):</label>
+                              <InputText
+                                type="number"
+                                name="intervaloDias"
+                                defaultValue={intervaloDias}
+                                register={register}
+                                errors={errors}
+                                placeholder="1 - 365"
+                              />
+                            </ContainerMonto>
+                            <ContainerMonto>
+                              <label>Repeticiones <small>(mín. 2)</small>:</label>
+                              <InputText
+                                type="number"
+                                name="repeticiones"
+                                defaultValue={repeticiones}
+                                register={register}
+                                errors={errors}
+                                placeholder="2 - 60"
+                              />
+                            </ContainerMonto>
+                          </FilaCamposRecurrencia>
+                        )}
+
+                        {modoRecurrencia === 'mensual' && (
+                          <>
+                            <FilaCamposRecurrencia>
+                              <ContainerMonto>
+                                <label>Día del mes:</label>
+                                <InputText
+                                  type="number"
+                                  name="diaMes"
+                                  defaultValue={diaMes}
+                                  register={register}
+                                  errors={errors}
+                                  placeholder="1 - 31"
+                                />
+                              </ContainerMonto>
+                              <ContainerMonto>
+                                <label>Repeticiones <small>(mín. 2)</small>:</label>
+                                <InputText
+                                  type="number"
+                                  name="repeticiones"
+                                  defaultValue={repeticiones}
+                                  register={register}
+                                  errors={errors}
+                                  placeholder="2 - 60"
+                                />
+                              </ContainerMonto>
+                            </FilaCamposRecurrencia>
+                            <ContenedorDropdown>
+                              <label>Inicio:</label>
+                              <Selector
+                                color="#e14e19"
+                                texto2={politica === 'este_mes' ? 'Este mes' : 'Próximo mes'}
+                                funcion={() => setStatePoliticaRecurrencia(!statePoliticaRecurrencia)}
+                                state={statePoliticaRecurrencia}
+                              />
+                              {statePoliticaRecurrencia && (
+                                <ListaGenerica
+                                  placement="down"
+                                  mobilePlacement="down"
+                                  scroll="hidden"
+                                  btnClose={false}
+                                  setState={() => setStatePoliticaRecurrencia(!statePoliticaRecurrencia)}
+                                  data={opcionesPoliticaRecurrencia}
+                                  funcion={(item) => {
+                                    setPolitica(item.value);
+                                    setPreviewFechas([]);
+                                  }}
+                                />
+                              )}
+                            </ContenedorDropdown>
+                            <MensualHint>La fecha seleccionada arriba no afecta al modo mensual; las fechas se calculan desde el mes de inicio.</MensualHint>
+                          </>
+                        )}
+                      </ContainerRecurrenciaOpciones>
+                    )}
+
+                    {esRecurrente && previewFechas.length > 0 && (
+                      <ContainerPreview>
+                        <label>Fechas a generar ({previewFechas.length}):</label>
+                        <ul>
+                          {previewFechas.map((f, i) => (
+                            <li key={i}>{f}</li>
+                          ))}
+                        </ul>
+                      </ContainerPreview>
+                    )}
+                  </ContainerRecurrencia>
                 )}
-              </ContainerRecurrencia>
-            )}
-          </section>
-          <ContenedorBotones>
-            <StickyFooter>
-              <BtnForm
-                type="submit"
-                titulo="Guardar"
-                bgcolor="#DAC1FF"
-                icono={<v.iconoguardar />}
-              />
-              <BtnForm
-                funcion={setState}
-                type="button"
-                titulo="Cancelar"
-                bgcolor="#ff4d4f"
-                icono={<v.iconocerrar />}
-              />
-            </StickyFooter>
-          </ContenedorBotones>
-        </form>
-      </div>
-    </Container>
+              </section>
+              <ContenedorBotones>
+                <StickyFooter>
+                  <BtnForm
+                    type="submit"
+                    titulo="Guardar"
+                    bgcolor="#DAC1FF"
+                    icono={<v.iconoguardar />}
+                  />
+                  <BtnForm
+                    funcion={setState}
+                    type="button"
+                    titulo="Cancelar"
+                    bgcolor="#ff4d4f"
+                    icono={<v.iconocerrar />}
+                  />
+                </StickyFooter>
+              </ContenedorBotones>
+            </form>
+          </motion.div>
+        </Container>
+      )}
+    </AnimatePresence>
   );
 }

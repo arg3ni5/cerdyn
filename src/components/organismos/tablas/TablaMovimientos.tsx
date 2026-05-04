@@ -89,6 +89,18 @@ export const TablaMovimientos = ({
     setAccion("Editar");
   };
 
+  const toggleEstado = async (item: Movimiento): Promise<void> => {
+    try {
+      const { actualizarMovimientos } = useMovimientosStore.getState();
+      await actualizarMovimientos({
+        id: item.id,
+        estado: !esPagado(item.estado),
+      });
+    } catch (error) {
+      console.error("Error al cambiar estado del movimiento", error);
+    }
+  };
+
   const esPagado = (estado: unknown): boolean => {
     if (typeof estado === "boolean") return estado;
     if (typeof estado === "number") return estado === 1;
@@ -144,6 +156,8 @@ export const TablaMovimientos = ({
                       <th scope="row">
                         <Pagado
                           $bgcolor={esPagado(item.estado) ? "#69e673" : "#b3b3b3"}
+                          onClick={() => toggleEstado(convertToMovimiento(item))}
+                          title={esPagado(item.estado) ? "Clic para marcar como pendiente" : "Clic para marcar como pagado"}
                         ></Pagado>
                       </th>
                       <td data-title="Descripcion">
@@ -408,12 +422,26 @@ interface PagadoProps {
 const Pagado = styled.div<PagadoProps>`
   display: flex;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
   &::before {
     content: "";
     width: 20px;
     height: 20px;
     border-radius: 50%;
     background-color: ${(props) => props.$bgcolor};
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &:hover::before {
+    transform: scale(1.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active::before {
+    transform: scale(0.95);
   }
 `;
 const FechaHeader = styled.div`
