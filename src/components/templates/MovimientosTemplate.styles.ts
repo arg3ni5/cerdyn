@@ -23,7 +23,6 @@ export const Container = styled.div<ContainerProps>`
     "header" 100px
     "hero" auto
     "totales" auto
-    "calendario" auto
     "main" auto
     "empty" auto;
 
@@ -55,10 +54,6 @@ export const Container = styled.div<ContainerProps>`
     @media ${Device.tablet} {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-  }
-
-  .calendario {
-    grid-area: calendario;
   }
 
   .main {
@@ -444,14 +439,6 @@ export const FloatingActionOption = styled.button<AccentProps>`
     transform: translateY(-1px);
     filter: brightness(1.02);
   }
-`;
-
-export const CalendarShell = styled.div`
-  width: 100%;
-  border-radius: 28px;
-  background: ${({ theme }) => theme.bg3};
-  box-shadow: 0 18px 36px rgba(18, 47, 79, 0.08);
-  padding: 8px 10px;
 `;
 
 export const EmptyState = styled.section`

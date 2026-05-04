@@ -26,8 +26,6 @@ import vaciorojo from "../../assets/vaciorojo.json";
 import vacioazul from "../../assets/vacioazul.json";
 import { DataDesplegables } from '../../utils/dataEstatica';
 import {
-  ActionCard,
-  CalendarShell,
   CategoryFilter,
   Container,
   ContentFiltro,
@@ -310,12 +308,6 @@ export const MovimientosTemplate = (): JSX.Element => {
           color={tipo.color}
           icono={<v.balance />}
         />
-      </section>
-
-      <section className="calendario">
-        <CalendarShell>
-          <CalendarioLineal />
-        </CalendarShell>
       </section>
 
       <section className="main">
