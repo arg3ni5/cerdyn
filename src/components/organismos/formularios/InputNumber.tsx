@@ -21,28 +21,35 @@ export const InputNumber = ({
   errors,
   icono
 }: InputNumberProps): JSX.Element => {
+  const montoRegister = register("monto", {
+    required: true,
+    valueAsNumber: true,
+    validate: (value) => !isNaN(value) || "Please enter a valid number"
+  });
+
   return (
     <Container>
       <ContainerTextoicono>
-        <span>{icono}</span>
+        <span>{icono || "₡"}</span>
         <input
           step="0.01"
+          inputMode="decimal"
           style={style}
           type="number"
           defaultValue={defaultValue}
           placeholder={placeholder}
-          {...register("monto", { 
-            required: true,
-            valueAsNumber: true,
-            validate: (value) => !isNaN(value) || "Please enter a valid number"
-          })}
+          {...montoRegister}
+          onChange={(e) => {
+            montoRegister.onChange(e);
+            onChange?.(e);
+          }}
         />
       </ContainerTextoicono>
 
-      {errors.valor?.type === "required" && (
+      {errors.monto?.type === "required" && (
         <p>Campo requerido</p>
       )}
-      {errors.valor?.type === "Number" && (
+      {errors.monto?.type === "Number" && (
         <p>Ingrese un número valido</p>
       )}
     </Container>
@@ -55,21 +62,25 @@ const Container = styled.div`
   width: 100%;
 
   input {
-    background: ${({ theme }) => theme.bgtotal};
-    font-size: 16px;
-    padding: 10px;
-    width: 100%;
-    border: none;
-    border-bottom: solid 1px grey;
+    background-color: transparent;
+    border: 1px solid rgba(156, 163, 175, 0.2);
+    border-radius: 16px;
+    box-sizing: border-box;
     color: ${({ theme }) => theme.text};
+    font-size: 24px;
+    font-weight: 900;
     outline: none;
+    padding: 16px 24px 16px 48px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
 
     &:focus {
-      border-bottom: solid 2px ${({ theme }) => theme.primary || "#6A1B9A"};
+      border-color: #e14e19;
+      box-shadow: 0 0 0 3px rgba(225, 78, 25, 0.08);
     }
 
     &::placeholder {
-      color: #c8c8c8;
+      color: #9ca3af;
     }
   }
 
@@ -82,7 +93,20 @@ const Container = styled.div`
 
 
 const ContainerTextoicono = styled.div`
-  display:flex;
-  align-items:center;
-  gap:10px;
-  text-align:center;`;
+  position: relative;
+
+  span {
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 1;
+  }
+`;
