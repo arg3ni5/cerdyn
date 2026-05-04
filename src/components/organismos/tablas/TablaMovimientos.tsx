@@ -335,27 +335,59 @@ const Container = styled.div<ContainerProps>`
       }
     }
     tbody {
+      display: block;
+      padding: 0 12px 12px;
+
       @media (min-width: ${v.bpbart}) {
         display: table-row-group;
+        padding: 0;
       }
       tr {
-        margin-bottom: 0.9em;
+        position: relative;
+        margin-bottom: 14px;
         border-radius: 18px;
-        background: ${({ theme }) => theme.bg};
-        box-shadow: 0 10px 22px rgba(18, 47, 79, 0.06);
+        background:
+          linear-gradient(180deg, ${({ $color }) => hexToRgba($color, 0.08)} 0%, ${({ $color }) => hexToRgba($color, 0.03)} 100%),
+          ${({ theme }) => theme.bg};
+        border: 1px solid ${({ theme }) => theme.text}14;
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
+        overflow: hidden;
+
+        &::before {
+          content: "";
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: 4px;
+          background: ${(props) => props.$color};
+          opacity: 0.9;
+        }
+
         @media (min-width: ${v.bpbart}) {
           display: table-row;
           border-width: 1px;
           background: transparent;
+          border: 0;
           box-shadow: none;
+          overflow: visible;
+
+          &::before {
+            content: none;
+          }
         }
         &:last-of-type {
           margin-bottom: 0;
         }
         &.group-header {
           background-color: transparent !important;
+          border: 0;
+          box-shadow: none;
+          overflow: visible;
           margin-bottom: 0.5em;
           margin-top: 1em;
+
+          &::before {
+            content: none;
+          }
 
           @media (min-width: ${v.bpbart}) {
             background-color: transparent !important;
@@ -375,15 +407,39 @@ const Container = styled.div<ContainerProps>`
         }
       }
       th[scope="row"] {
-        padding: 1rem 0.9rem 0.45rem;
+        align-items: center;
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        padding: 0.9rem 0.9rem 0.55rem;
+
+        .status-label {
+          color: ${({ theme }) => theme.colorSubtitle};
+          font-size: 0.78em;
+          font-weight: 700;
+        }
+
+        .status-text {
+          color: ${({ theme }) => theme.text};
+          font-size: 0.85em;
+          font-weight: 800;
+          margin-left: auto;
+        }
+
         @media (min-width: ${v.bplisa}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         }
         @media (min-width: ${v.bpbart}) {
           background-color: transparent;
+          display: table-cell;
           text-align: center;
           color: ${({ theme }) => theme.text};
           padding: 0.75em;
+
+          .status-label,
+          .status-text {
+            display: none;
+          }
         }
       }
       .Colordiv {
