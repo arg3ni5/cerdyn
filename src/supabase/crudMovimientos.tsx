@@ -142,18 +142,27 @@ export const RptMovimientosPorMesAñoJson = async (p: RptMovimientosMesAnioParam
 };
 
 
+type MovimientoMesAnioConCuentas = MovimientosMesAnio[number] & {
+  idcuenta?: number | null;
+  idcategoria?: number | null;
+  idcuenta_origen?: number | null;
+  idcuenta_destino?: number | null;
+};
+
 // Add this function after your type definitions and before the other functions
 export const convertToMovimiento = (item: MovimientosMesAnio[number]): Movimiento => {
+  const movimiento = item as MovimientoMesAnioConCuentas;
+
   return {
     id: item.id,
     descripcion: item.descripcion,
     valor: item.valor,
     fecha: item.fecha,
     estado: item.estado,
-    idcategoria: null,
-    idcuenta: null,
-    idcuenta_origen: item.idcuenta_origen ?? null,
-    idcuenta_destino: item.idcuenta_destino ?? null,
+    idcategoria: movimiento.idcategoria ?? null,
+    idcuenta: movimiento.idcuenta ?? null,
+    idcuenta_origen: movimiento.idcuenta_origen ?? null,
+    idcuenta_destino: movimiento.idcuenta_destino ?? null,
     tipo: ''
   } as unknown as Movimiento;
 };
