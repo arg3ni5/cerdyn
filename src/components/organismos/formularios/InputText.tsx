@@ -13,6 +13,7 @@ interface InputTextProps {
   name?: string;
   minLength?: number;
   label?: string;
+  variant?: "line" | "surface";
 }
 
 export function InputText({
@@ -26,9 +27,10 @@ export function InputText({
   type = "text",
   name = "descripcion",
   label,
+  variant = "line",
 }: InputTextProps) {
   return (
-    <Container>
+    <Container $variant={variant}>
       {label && <Label>{label}</Label>}
       <input
         style={style}
@@ -49,26 +51,33 @@ export function InputText({
   );
 }
 
-const Container = styled.div`
+const Container = styled.div<{ $variant: "line" | "surface" }>`
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 5px;
   input {
-    background: ${({ theme }) => theme.bgtotal};
-    font-size: 16px;
-    padding: 10px 10px 10px 5px;
+    background: ${({ theme, $variant }) => $variant === "surface" ? "transparent" : theme.bgtotal};
+    border: ${({ $variant }) => $variant === "surface" ? "1px solid rgba(156, 163, 175, 0.2)" : "none"};
+    border-bottom: ${({ $variant }) => $variant === "surface" ? "1px solid rgba(156, 163, 175, 0.2)" : "solid 1px grey"};
+    border-radius: ${({ $variant }) => $variant === "surface" ? "16px" : "0"};
+    box-sizing: border-box;
+    font-size: ${({ $variant }) => $variant === "surface" ? "17px" : "16px"};
+    font-weight: ${({ $variant }) => $variant === "surface" ? "700" : "400"};
+    padding: ${({ $variant }) => $variant === "surface" ? "18px 22px" : "10px 10px 10px 5px"};
     display: block;
     width: 100%;
-    border: none;
-    border-bottom: solid 1px grey;
     color: ${({ theme }) => theme.text};
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
     &:focus {
-      border-bottom: none;
+      border-color: ${({ $variant }) => $variant === "surface" ? "#e14e19" : "transparent"};
+      border-bottom-color: ${({ $variant }) => $variant === "surface" ? "#e14e19" : "transparent"};
+      box-shadow: ${({ $variant }) => $variant === "surface" ? "0 0 0 3px rgba(225, 78, 25, 0.08)" : "none"};
     }
     &::placeholder {
-      color: #c8c8c8;
+      color: #9ca3af;
+      font-weight: ${({ $variant }) => $variant === "surface" ? "600" : "400"};
     }
   }
   p {
