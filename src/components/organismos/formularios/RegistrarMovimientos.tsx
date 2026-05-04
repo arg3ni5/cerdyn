@@ -35,6 +35,7 @@ interface RegistrarMovimientosProps {
   state: boolean;
   dataSelect: Movimiento | undefined;
   accion?: Accion;
+  tipoRegistro?: Tipo;
 }
 
 interface FormInputs {
@@ -56,7 +57,15 @@ const esPagado = (estado: unknown): boolean => {
   return false;
 };
 
-export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movimiento, accion }: RegistrarMovimientosProps): JSX.Element => {
+const obtenerTituloMovimiento = (accion: Accion | undefined, tipoMovimiento: Tipo): string => {
+  if (accion === "Editar") return "Editar movimiento";
+  if (tipoMovimiento?.tipo === "g") return "Nuevo Gasto";
+  if (tipoMovimiento?.tipo === "i") return "Nuevo Ingreso";
+  if (tipoMovimiento?.tipo === "t") return "Nueva Transferencia";
+  return "Nuevo movimiento";
+};
+
+export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movimiento, accion, tipoRegistro }: RegistrarMovimientosProps): JSX.Element => {
   const { cuentaItemSelect, mostrarCuentas, selectCuenta } = useCuentaStore();
   const { selectTipoMovimiento } = useOperaciones();
   const { idusuario } = useUsuariosStore();
@@ -97,7 +106,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     { icono: "", descripcion: "Próximo mes", value: "proximo_mes" as const },
   ];
 
-  const tipoInicial = dataSelect?.tipo || (selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
+  const tipoInicial = dataSelect?.tipo || tipoRegistro?.tipo || (selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
   const [tipoMovimiento, setTipoMovimiento] = useState<Tipo>(
     (tipoInicial ? DataDesplegables.movimientos[tipoInicial] : undefined) || {} as Tipo
   );
@@ -106,11 +115,11 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   const esTransferencia = tipoMovimiento?.tipo === "t";
 
   useEffect(() => {
-    const tipo = dataSelect?.tipo || (accion === "Nuevo" && selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
+    const tipo = dataSelect?.tipo || (accion === "Nuevo" ? tipoRegistro?.tipo : undefined) || (accion === "Nuevo" && selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
     if (tipo && DataDesplegables.movimientos[tipo]) {
       setTipoMovimiento(DataDesplegables.movimientos[tipo]);
     }
-  }, [dataSelect?.tipo, accion, selectTipoMovimiento?.tipo]);
+  }, [dataSelect?.tipo, accion, tipoRegistro?.tipo, selectTipoMovimiento?.tipo]);
 
   useEffect(() => {
     if (accion === "Editar") {
@@ -452,29 +461,32 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
             <div className="encabezado">
-              <ContenedorDropdown>
-                <Selector
-                  color="#e14e19"
-                  texto1={tipoMovimiento?.text ? accion + " " : ""}
-                  texto2={tipoMovimiento?.text || "Seleccione un tipo"}
-                  funcion={() => setStateTipo(!stateTipo)}
-                />
-
-                {stateTipo && (
-                  <ListaGenerica
-                    placement="down"
-                    mobilePlacement="down"
-                    btnClose={false}
-                    scroll="hidden"
-                    setState={() => setStateTipo(!stateTipo)}
-                    data={DataDesplegableMovimientos.filter(item => item.tipo != "b").map(item => ({
-                      descripcion: item.text,
-                      ...item,
-                    }))}
-                    funcion={cambiarTipo}
+              <div className="encabezado-contenido">
+                <h1>{obtenerTituloMovimiento(accion, tipoMovimiento)}</h1>
+                <ContenedorDropdown className="selector-tipo-movimiento">
+                  <Selector
+                    color="#e14e19"
+                    texto1="Tipo: "
+                    texto2={tipoMovimiento?.text || "Seleccione un tipo"}
+                    funcion={() => setStateTipo(!stateTipo)}
                   />
-                )}
-              </ContenedorDropdown>
+
+                  {stateTipo && (
+                    <ListaGenerica
+                      placement="down"
+                      mobilePlacement="down"
+                      btnClose={false}
+                      scroll="hidden"
+                      setState={() => setStateTipo(!stateTipo)}
+                      data={DataDesplegableMovimientos.filter(item => item.tipo != "b").map(item => ({
+                        descripcion: item.text,
+                        ...item,
+                      }))}
+                      funcion={cambiarTipo}
+                    />
+                  )}
+                </ContenedorDropdown>
+              </div>
               <CloseButton onClick={setState} type="button">
                 <X size={24} />
               </CloseButton>
@@ -507,9 +519,8 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                   <InputNumber
                     defaultValue={dataSelect.valor!}
                     register={register}
-                    placeholder="Ingrese monto"
+                    placeholder="0.00"
                     errors={errors}
-                    icono={<v.iconocalculadora />}
                   />
                 </ContainerMonto>
 
