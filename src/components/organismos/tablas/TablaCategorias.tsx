@@ -30,6 +30,11 @@ export const TablaCategorias = ({
   setdataSelect,
   setAccion,
 }: TablaCategoriasProps) => {
+  const [pagina, setPagina] = useState<number>(1);
+  const [porPagina] = useState<number>(10);
+  const [pendingDelete, setPendingDelete] = useState<Categoria | null>(null);
+  const { eliminarCategoria } = useCategoriasStore();
+
   if (!data || !Array.isArray(data)) {
     return <Container>No hay datos disponibles</Container>;
   }
@@ -38,14 +43,7 @@ export const TablaCategorias = ({
     return <Container>No hay categorías registradas</Container>;
   }
 
-  const [pagina, setPagina] = useState<number>(1);
-  const [porPagina] = useState<number>(10);
-  const [pendingDelete, setPendingDelete] = useState<Categoria | null>(null);
-
-  const mx = data.length / porPagina;
-  const maximo = mx < 1 ? 1 : mx;
-
-  const { eliminarCategoria } = useCategoriasStore();
+  const maximo = Math.max(1, data.length / porPagina);
 
   const eliminar = (p: Categoria): void => {
     setPendingDelete(p);

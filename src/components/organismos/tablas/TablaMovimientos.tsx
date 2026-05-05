@@ -35,19 +35,16 @@ export const TablaMovimientos = ({
   setDataSelect,
   setAccion,
 }: TablaMovimientosProps): JSX.Element | null => {
-  if (data == null) {
-    return null;
-  }
-
   const [pagina, setPagina] = useState<number>(1);
   const porPagina = 10;
   const [pendingDelete, setPendingDelete] = useState<Movimiento | null>(null);
+  const { eliminarMovimiento } = useMovimientosStore();
 
   // Agrupar movimientos por fecha
   const groupedData = useMemo(() => {
-    const grupos: { [key: string]: typeof data } = {};
+    const grupos: { [key: string]: MovimientosMesAnio } = {};
 
-    data.forEach((item) => {
+    (data || []).forEach((item) => {
       const fecha = item.fecha;
       if (!grupos[fecha]) {
         grupos[fecha] = [];
@@ -64,10 +61,11 @@ export const TablaMovimientos = ({
       .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   }, [data]);
 
-  const mx = groupedData.length / porPagina;
-  const maximo = mx < 1 ? 1 : mx;
+  if (data == null) {
+    return null;
+  }
 
-  const { eliminarMovimiento } = useMovimientosStore();
+  const maximo = Math.max(1, groupedData.length / porPagina);
 
   const eliminar = (p: Movimiento): void => {
     setPendingDelete(p);
