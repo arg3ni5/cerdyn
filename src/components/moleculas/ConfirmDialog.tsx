@@ -1,6 +1,7 @@
 import styled from 'styled-components'
 import { motion } from 'motion/react'
 import { X, AlertTriangle } from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 interface ConfirmDialogProps {
   title: string
@@ -24,7 +25,7 @@ export function ConfirmDialog ({
   const accentColor =
     variant === 'danger' ? '#ef4444' : variant === 'warning' ? '#f59e0b' : '#3485eb'
 
-  return (
+  return createPortal(
     <Overlay
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -65,7 +66,8 @@ export function ConfirmDialog ({
           </ConfirmBtn>
         </Actions>
       </Card>
-    </Overlay>
+    </Overlay>,
+    document.body
   )
 }
 
