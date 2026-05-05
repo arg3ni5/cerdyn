@@ -42,6 +42,7 @@ export const Sidebar = ({ state, setState }: SidebarProps): JSX.Element => {
           >
             <NavLink
               to={to}
+              end={to === "/movimientos" || to === "/"}
               className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
             >
               <div className="Linkicon">{icon}</div>
@@ -60,6 +61,7 @@ export const Sidebar = ({ state, setState }: SidebarProps): JSX.Element => {
           >
             <NavLink
               to={to}
+              end={to === "/"}
               className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
             >
               <div className="Linkicon">{icon}</div>

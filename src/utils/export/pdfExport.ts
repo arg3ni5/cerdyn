@@ -21,6 +21,26 @@ const TIPO_LABELS: Record<string, string> = {
   t: 'Transferencia',
 };
 
+type MovimientoExportable = DataMovimientos[keyof DataMovimientos][number] & {
+  cuenta_origen?: string | null;
+  cuenta_destino?: string | null;
+};
+
+const getCuenta = (tipo: 'i' | 'g' | 't', item: MovimientoExportable): string => {
+  if (tipo === 't') {
+    const origen = item.cuenta_origen || '';
+    const destino = item.cuenta_destino || '';
+    return origen || destino ? `${origen} -> ${destino}` : item.cuenta ?? '';
+  }
+
+  return item.cuenta ?? '';
+};
+
+const getCategoria = (tipo: 'i' | 'g' | 't', item: MovimientoExportable): string => {
+  if (tipo === 't') return 'Transferencia';
+  return item.categoria ?? '';
+};
+
 export const exportToPdf = (options: PdfExportOptions): void => {
   const { titulo, periodo, data, filename, maxRows = 500 } = options;
 
@@ -53,11 +73,12 @@ export const exportToPdf = (options: PdfExportOptions): void => {
   const allRows: string[][] = [];
   const addMovimientos = (tipo: 'i' | 'g' | 't') => {
     (data[tipo] || []).forEach((item) => {
+      const movimiento = item as MovimientoExportable;
       allRows.push([
         item.fecha ?? '',
         item.descripcion ?? '',
-        item.categoria ?? '',
-        item.cuenta ?? '',
+        getCategoria(tipo, movimiento),
+        getCuenta(tipo, movimiento),
         Number(item.valor).toFixed(2),
         item.estado ? 'Pagado' : 'Pendiente',
         TIPO_LABELS[tipo],

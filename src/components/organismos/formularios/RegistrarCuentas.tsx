@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { v } from "../../../styles/variables";
 import {
   InputText,
   Spinner,
@@ -11,10 +10,14 @@ import {
   CuentaUpdate,
   CuentaInsert,
   Accion,
-  InputTextNumber, // Assuming this component exists or will be created for number inputs
+  InputTextNumber,
 } from "../../../index";
+import { v } from "../../../styles/variables";
 import { useForm } from "react-hook-form";
 import Emojipicker, { EmojiClickData } from "emoji-picker-react";
+import { AnimatePresence } from "motion/react";
+import { X } from "lucide-react";
+import { Container, CloseButton, ContenedorBotones, StickyFooter } from "./RegistrarMovimientos.styles";
 
 interface RegistrarCuentasProps {
   onClose: () => void;
@@ -27,7 +30,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
   const { usuario } = useUsuariosStore();
   const { selectTipoCuenta } = useOperaciones();
   const [showPicker, setShowPicker] = useState<boolean>(false);
-  const [emojiselect, setEmojiselect] = useState<string>("💰"); // Default icon for accounts
+  const [emojiselect, setEmojiselect] = useState<string>("💰");
   const [estadoProceso, setEstadoproceso] = useState<boolean>(false);
 
   function onEmojiClick(emojiObject: EmojiClickData): void {
@@ -37,7 +40,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
 
   interface FormInputs {
     descripcion: string;
-    saldo_actual: number; // Changed from 'saldo' to 'saldo_actual' to match Cuenta type
+    saldo_actual: number;
     icono: string;
     idusuario?: number;
     id?: number;
@@ -47,7 +50,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
     register,
     formState: { errors },
     handleSubmit,
-    setValue, // Added setValue to prefill form
+    setValue,
   } = useForm<FormInputs>();
 
   const submitForm = async (formData: FormInputs): Promise<void> => {
@@ -57,16 +60,16 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
 
     const baseData = {
       descripcion: formData.descripcion,
-      saldo_actual: Number(formData.saldo_actual), // Ensure saldo_actual is a number
+      saldo_actual: Number(formData.saldo_actual),
       icono: emojiselect,
-      tipo: accion === "Editar" && "tipo" in dataSelect && dataSelect.tipo 
-        ? dataSelect.tipo 
+      tipo: accion === "Editar" && "tipo" in dataSelect && dataSelect.tipo
+        ? dataSelect.tipo
         : selectTipoCuenta.tipo,
       idusuario: usuario.id,
     };
 
-    setEstadoproceso(true);
     try {
+      setEstadoproceso(true);
       if (accion === "Editar" && dataSelect.id) {
         const updateData: CuentaUpdate = {
           ...baseData,
@@ -79,7 +82,6 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
       onClose();
     } catch (error) {
       console.error("Error al guardar la cuenta:", error);
-      // Potentially show an error message to the user
     } finally {
       setEstadoproceso(false);
     }
@@ -94,165 +96,147 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
   }, [accion, dataSelect, setValue]);
 
   return (
-    <Container role="dialog" aria-modal="true" aria-label="Formulario de cuenta">
-      {estadoProceso && <Spinner />}
+    <AnimatePresence>
+      <Container
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Formulario de cuenta"
+      >
+        <div className="sub-contenedor" aria-busy={estadoProceso}>
+          {estadoProceso && <Spinner />}
 
-      <div className="sub-contenedor">
-        <div className="headers">
-          <section>
+          <div className="encabezado">
             <h1>
-              {accion == "Editar"
-                ? "Editar cuenta"
-                : "Registrar nueva cuenta"}
+              {accion === "Editar" ? "Editar cuenta" : "Nueva cuenta"}
             </h1>
-          </section>
+          </div>
 
-          <section>
-            <button type="button" onClick={onClose} aria-label="Cerrar formulario de cuenta">x</button>
-          </section>
-        </div>
+          <CloseButton
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar formulario de cuenta"
+            disabled={estadoProceso}
+          >
+            <X size={18} />
+          </CloseButton>
 
-        <form className="formulario" onSubmit={handleSubmit(submitForm)}>
-          <section>
-            <div>
-              <InputText
-                label="Descripción"
-                defaultValue={dataSelect.descripcion || ""}
-                name="descripcion"
-                register={register}
-                placeholder="Descripción de la cuenta"
-                errors={errors}
-                style={{ textTransform: "capitalize" }}
-              />
-            </div>
-            <div>
-              {/* Assuming InputTextNumber is a component similar to InputText but for numbers */}
-              <InputTextNumber
-                label="Saldo actual"
-                name="saldo_actual"
-                defaultValue={(dataSelect as CuentaUpdate).saldo_actual || 0}
-                register={register}
-                placeholder="0.00"
-                errors={errors}
-              />
-            </div>
-            <div>
-              <ContentTitle>
-                <input
-                  readOnly={true}
-                  value={emojiselect}
-                  type="text"
+          <form className="formulario" onSubmit={handleSubmit(submitForm)}>
+            <section>
+              <div>
+                <InputText
+                  label="Descripción"
+                  defaultValue={dataSelect.descripcion || ""}
+                  name="descripcion"
+                  register={register}
+                  placeholder="Descripción de la cuenta"
+                  errors={errors}
+                  style={{ textTransform: "capitalize" }}
+                />
+              </div>
+              <div>
+                <InputTextNumber
+                  label="Saldo actual"
+                  name="saldo_actual"
+                  defaultValue={(dataSelect as CuentaUpdate).saldo_actual || 0}
+                  register={register}
+                  placeholder="0.00"
+                  errors={errors}
+                />
+              </div>
+
+              <EmojiSection>
+                <label>Ícono</label>
+                <EmojiTrigger
+                  type="button"
                   onClick={() => setShowPicker(!showPicker)}
-                ></input>
-                <span>Icono</span>
-              </ContentTitle>
-              {showPicker && (
-                <ContainerEmojiPicker>
-                  <Emojipicker onEmojiClick={onEmojiClick} />
-                </ContainerEmojiPicker>
-              )}
-            </div>
-            <div className="btnguardarContent">
-              <BtnForm
-                type="submit"
-                icono={<v.iconoguardar />}
-                titulo="Guardar"
-                bgcolor="linear-gradient(135deg, #ffd667 0%, #ff9558 100%)"
-              />
-            </div>
-          </section>
-        </form>
-      </div>
-    </Container>
+                  aria-label="Seleccionar ícono"
+                  disabled={estadoProceso}
+                >
+                  <span>{emojiselect}</span>
+                  <span className="hint">Toca para cambiar</span>
+                </EmojiTrigger>
+                {showPicker && (
+                  <EmojiOverlay onClick={() => setShowPicker(false)}>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Emojipicker onEmojiClick={onEmojiClick} />
+                    </div>
+                  </EmojiOverlay>
+                )}
+              </EmojiSection>
+            </section>
+
+            <ContenedorBotones>
+              <StickyFooter>
+                <BtnForm
+                  type="submit"
+                  icono={<v.iconoguardar />}
+                  titulo="Guardar"
+                  bgcolor="linear-gradient(135deg, #ffd667 0%, #ff9558 100%)"
+                  disabled={estadoProceso}
+                />
+              </StickyFooter>
+            </ContenedorBotones>
+          </form>
+        </div>
+      </Container>
+    </AnimatePresence>
   );
 }
-const Container = styled.div`
-  top: 0;
-  left: 0;
-  position: fixed;
-  background-color: rgba(10, 9, 9, 0.5);
-  backdrop-filter: blur(6px);
+
+const EmojiSection = styled.div`
   display: flex;
-  width: 100%;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
 
-  .sub-contenedor {
-    width: 500px;
-    max-width: 85%;
-    border-radius: 28px;
-    background: ${({ theme }) => theme.bgtotal};
-    box-shadow: -10px 15px 30px rgba(10, 9, 9, 0.3);
-    padding: 20px 36px 24px 36px;
-    z-index: 100;
-
-    .headers {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-
-      h1 {
-        font-size: 24px;
-        font-weight: 700;
-        margin: 0;
-      }
-      button {
-        width: 40px;
-        height: 40px;
-        border: none;
-        border-radius: 999px;
-        background: ${({ theme }) => theme.bg3};
-        color: ${({ theme }) => theme.text};
-        font-size: 20px;
-        cursor: pointer;
-      }
-    }
-    .formulario {
-      section {
-        gap: 20px;
-        display: flex;
-        flex-direction: column;
-      }
-    }
+  label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding-left: 4px;
   }
 `;
 
-const ContentTitle = styled.div`
+const EmojiTrigger = styled.button`
   display: flex;
-  justify-content: start;
   align-items: center;
-  gap: 20px;
-  margin-top: 10px; // Added some margin for spacing
-  svg {
-    font-size: 25px;
-  }
-  input {
-    border: none;
-    outline: none;
-    background: ${({ theme }) => theme.bg3};
-    border-radius: 12px;
-    padding: 8px;
-    width: 40px;
+  gap: 12px;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid rgba(156, 163, 175, 0.2);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: ${({ theme }) => theme.text};
+  transition: border-color 0.2s;
+  width: fit-content;
+
+  span:first-child {
     font-size: 28px;
-    cursor: pointer;
+    line-height: 1;
   }
-  span {
-    font-size: 1em; // Adjusted for consistency
-    color: ${({ theme }) => theme.text}; // Use theme color
+
+  .hint {
+    font-size: 13px;
+    color: ${({ theme }) => theme.colorSubtitle};
+  }
+
+  &:hover {
+    border-color: #e14e19;
   }
 `;
-const ContainerEmojiPicker = styled.div`
-  position: absolute;
+
+const EmojiOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
   display: flex;
-  justify-content: center;
   align-items: center;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 1001;
+  justify-content: center;
 `;

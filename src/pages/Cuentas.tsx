@@ -1,6 +1,4 @@
-import { useEffect } from "react";
 import { CuentasTemplate } from "../components/templates/CuentasTemplate";
-import { useLoading } from "../context/LoadingContext";
 import { useCuentaStore } from "../store/CuentaStore";
 import { useOperaciones } from "../store/OperacionesStore";
 import { useUsuariosStore } from "../store/UsuariosStore";
@@ -13,10 +11,9 @@ export function Cuentas() {
   const { selectTipoCuenta } = useOperaciones();
   const { cuentas, mostrarCuentas } = useCuentaStore();
   const { usuario } = useUsuariosStore();
-  const { setIsLoading } = useLoading();
   const isDev = import.meta.env.DEV;
 
-  const { isLoading, error, fetchStatus } = useQuery<Cuenta[], Error>({
+  const { isLoading, error } = useQuery<Cuenta[], Error>({
     queryKey: ["mostrar cuentas", selectTipoCuenta, usuario?.id],
     queryFn: () => {
       if (!usuario?.id) {
@@ -37,10 +34,6 @@ export function Cuentas() {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
-
-  useEffect(() => {
-    setIsLoading(isLoading);
-  }, [isLoading, setIsLoading]);
 
   // Mostrar loader mientras se cargan los datos
   if (isLoading) return <SpinnerLoader />;

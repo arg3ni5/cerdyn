@@ -11,12 +11,12 @@ const Container = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  width: 100vw;
   position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1000;
+  inset: 0;
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  z-index: 9999;
   background: ${({ theme }) => theme.bgtotal};
-  transform: all 0.3s;
+  transition: opacity 0.3s ease;
 `;

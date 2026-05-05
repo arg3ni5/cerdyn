@@ -14,8 +14,9 @@ import { Dark, Light } from "./styles/themes";
 import { Device } from "./styles/breakpoints";
 import type { Usuario } from "./supabase/crudUsuarios";
 import ErrorBoundary from "./components/ErrorBoundary";
-import QuickAddModal from "./components/QuickAddModal";
+import GlobalMovimientoModal from "./components/GlobalMovimientoModal";
 import FloatingAddButton from './components/FloatingAddButton';
+import { ToastContainer } from './components/atomos/ToastContainer';
 
 type ThemeContextType = typeof Light;
 
@@ -23,7 +24,7 @@ export const ThemeContext = createContext<ThemeContextType>(Light);
 
 function App(): JSX.Element {
   const { setUsuario, clearUsuario, ObtenerUsuarioActual } = useUsuariosStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isPublicRoute = pathname === "/login" || pathname === "/auth/callback";
@@ -67,6 +68,7 @@ function App(): JSX.Element {
         <LoadingProvider>
           <ThemeProvider theme={themeStyle}>
             <GlobalStyles />
+            <ToastContainer />
             <AuthContextProvider>
               {!isPublicRoute ? (
                 <Container className={sidebarOpen ? "active" : ""}>
@@ -83,7 +85,7 @@ function App(): JSX.Element {
 
                   <Containerbody>
                     <FloatingAddButton />
-                    <QuickAddModal />
+                    <GlobalMovimientoModal />
                     <MyRoutes isLoading={isLoading} />
                   </Containerbody>
                 </Container>

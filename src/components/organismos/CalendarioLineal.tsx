@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { MdOutlineNavigateNext, MdArrowBackIos } from "react-icons/md";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { JSX } from "react";
 import { ConvertirCapitalize, useOperaciones } from "../../index";
 import dayjs from 'dayjs';
@@ -15,7 +15,7 @@ export const CalendarioLineal = (): JSX.Element => {
       <header>
         <div className="subcontainer">
           <button type="button" onClick={substractMonth} className="atras" aria-label="Mes anterior">
-            <MdArrowBackIos />
+            <ChevronLeft size={24} strokeWidth={2.5} />
           </button>
           <section className="contentValue">
             <button type="button" onClick={setToday}>
@@ -24,7 +24,7 @@ export const CalendarioLineal = (): JSX.Element => {
           </section>
 
           <button type="button" onClick={addMonth} className="adelante" aria-label="Mes siguiente">
-            <MdOutlineNavigateNext />
+            <ChevronRight size={24} strokeWidth={2.5} />
           </button>
         </div>
       </header>
@@ -75,17 +75,9 @@ const Container = styled.div<ContainerProps>`
       }
       .atras {
         cursor: pointer;
-        svg {
-          width: 24px;
-          height: 24px;
-        }
       }
       .adelante {
         cursor: pointer;
-        svg {
-          width: 28px;
-          height: 28px;
-        }
       }
 
       .atras,
@@ -99,6 +91,12 @@ const Container = styled.div<ContainerProps>`
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        padding: 0;
+        line-height: 0;
+
+        svg {
+          display: block;
+        }
       }
     }
     .current-date {

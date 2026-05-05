@@ -38,8 +38,8 @@ const Container = styled.div<ContainerProps>`
  cursor: pointer;
  border: 2px solid ${(props) => props.color};
  border-radius: 10px;
- padding: 10px;
- gap: 10px;
+ padding: 8px 10px;
+ gap: 8px;
  transition: 0.3s;
  font-weight: 600;
 

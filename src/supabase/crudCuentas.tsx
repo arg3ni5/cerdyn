@@ -122,3 +122,17 @@ export async function ObtenerSaldoCuentaAFecha(p_idcuenta: number, p_fecha: stri
     return 0;
   }
 }
+
+export async function ObtenerSaldoUsuarioAFecha(p_idusuario: number, p_fecha: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("fn_obtener_saldo_usuario_a_fecha", {
+      p_idusuario,
+      p_fecha,
+    });
+    if (error) throw error;
+    return data || 0;
+  } catch (error) {
+    logger.error("Error al obtener saldo de usuario a fecha", { error, p_idusuario, p_fecha });
+    return 0;
+  }
+}

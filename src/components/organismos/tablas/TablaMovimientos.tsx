@@ -9,11 +9,12 @@ import {
   Tipo,
   useMovimientosStore,
 } from "../../../index";
-import Swal from "sweetalert2";
 import { v } from "../../../styles/variables";
 import { JSX, useState, useMemo } from "react";
 import React from "react";
 import { convertToMovimiento } from '../../../supabase/crudMovimientos';
+import { ConfirmDialog } from "../../moleculas/ConfirmDialog";
+import { AnimatePresence } from "motion/react";
 
 interface TablaMovimientosProps {
   titulo?: string;
@@ -34,18 +35,17 @@ export const TablaMovimientos = ({
   setDataSelect,
   setAccion,
 }: TablaMovimientosProps): JSX.Element | null => {
-  if (data == null) {
-    return null;
-  }
-
   const [pagina, setPagina] = useState<number>(1);
   const porPagina = 10;
+  const [pendingDelete, setPendingDelete] = useState<Movimiento | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { eliminarMovimiento } = useMovimientosStore();
 
   // Agrupar movimientos por fecha
   const groupedData = useMemo(() => {
-    const grupos: { [key: string]: typeof data } = {};
+    const grupos: { [key: string]: MovimientosMesAnio } = {};
 
-    data.forEach((item) => {
+    (data || []).forEach((item) => {
       const fecha = item.fecha;
       if (!grupos[fecha]) {
         grupos[fecha] = [];
@@ -62,25 +62,25 @@ export const TablaMovimientos = ({
       .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   }, [data]);
 
-  const mx = groupedData.length / porPagina;
-  const maximo = mx < 1 ? 1 : mx;
+  if (data == null) {
+    return null;
+  }
 
-  const { eliminarMovimiento } = useMovimientosStore();
+  const maximo = Math.max(1, groupedData.length / porPagina);
 
   const eliminar = (p: Movimiento): void => {
-    Swal.fire({
-      title: "¿Estás seguro(a)(e)?",
-      text: "Una vez eliminado, ¡no podrá recuperar este registro!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Si, eliminar",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await eliminarMovimiento({ id: p.id } as Movimiento);
-      }
-    });
+    setPendingDelete(p);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
+    try {
+      await eliminarMovimiento({ id: pendingDelete.id } as Movimiento);
+    } finally {
+      setIsDeleting(false);
+      setPendingDelete(null);
+    }
   };
 
   const editar = (data: Movimiento): void => {
@@ -113,6 +113,18 @@ export const TablaMovimientos = ({
 
   return (
     <>
+      <AnimatePresence>
+        {pendingDelete && (
+          <ConfirmDialog
+            title="¿Eliminar movimiento?"
+            message="Una vez eliminado, ¡no podrá recuperar este registro!"
+            confirmText="Sí, eliminar"
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setPendingDelete(null)}
+            isLoading={isDeleting}
+          />
+        )}
+      </AnimatePresence>
       <Container $bgcolor={tipo.bgcolor || ''} $color={tipo.color || ''}>
         {titulo && (<h3>{titulo}</h3>)}
         <div className="table-wrapper">
@@ -154,11 +166,13 @@ export const TablaMovimientos = ({
                   {group.movimientos.map((item) => (
                     <tr key={item.id}>
                       <th scope="row">
+                        <span className="status-label">Estado</span>
                         <Pagado
                           $bgcolor={esPagado(item.estado) ? "#69e673" : "#b3b3b3"}
                           onClick={() => toggleEstado(convertToMovimiento(item))}
                           title={esPagado(item.estado) ? "Clic para marcar como pendiente" : "Clic para marcar como pagado"}
                         ></Pagado>
+                        <span className="status-text">{esPagado(item.estado) ? "Pagado" : "Pendiente"}</span>
                       </th>
                       <td data-title="Descripcion">
                         {item.descripcion}
@@ -326,27 +340,59 @@ const Container = styled.div<ContainerProps>`
       }
     }
     tbody {
+      display: block;
+      padding: 0 12px 12px;
+
       @media (min-width: ${v.bpbart}) {
         display: table-row-group;
+        padding: 0;
       }
       tr {
-        margin-bottom: 0.9em;
+        position: relative;
+        margin-bottom: 14px;
         border-radius: 18px;
-        background: ${({ theme }) => theme.bg};
-        box-shadow: 0 10px 22px rgba(18, 47, 79, 0.06);
+        background:
+          linear-gradient(180deg, ${({ $color }) => hexToRgba($color, 0.08)} 0%, ${({ $color }) => hexToRgba($color, 0.03)} 100%),
+          ${({ theme }) => theme.bg};
+        border: 1px solid ${({ theme }) => theme.text}14;
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
+        overflow: hidden;
+
+        &::before {
+          content: "";
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: 4px;
+          background: ${(props) => props.$color};
+          opacity: 0.9;
+        }
+
         @media (min-width: ${v.bpbart}) {
           display: table-row;
           border-width: 1px;
           background: transparent;
+          border: 0;
           box-shadow: none;
+          overflow: visible;
+
+          &::before {
+            content: none;
+          }
         }
         &:last-of-type {
           margin-bottom: 0;
         }
         &.group-header {
           background-color: transparent !important;
+          border: 0;
+          box-shadow: none;
+          overflow: visible;
           margin-bottom: 0.5em;
           margin-top: 1em;
+
+          &::before {
+            content: none;
+          }
 
           @media (min-width: ${v.bpbart}) {
             background-color: transparent !important;
@@ -366,15 +412,39 @@ const Container = styled.div<ContainerProps>`
         }
       }
       th[scope="row"] {
-        padding: 1rem 0.9rem 0.45rem;
+        align-items: center;
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        padding: 0.9rem 0.9rem 0.55rem;
+
+        .status-label {
+          color: ${({ theme }) => theme.colorSubtitle};
+          font-size: 0.78em;
+          font-weight: 700;
+        }
+
+        .status-text {
+          color: ${({ theme }) => theme.text};
+          font-size: 0.85em;
+          font-weight: 800;
+          margin-left: auto;
+        }
+
         @media (min-width: ${v.bplisa}) {
           border-bottom: 1px solid rgba(161, 161, 161, 0.32);
         }
         @media (min-width: ${v.bpbart}) {
           background-color: transparent;
+          display: table-cell;
           text-align: center;
           color: ${({ theme }) => theme.text};
           padding: 0.75em;
+
+          .status-label,
+          .status-text {
+            display: none;
+          }
         }
       }
       .Colordiv {

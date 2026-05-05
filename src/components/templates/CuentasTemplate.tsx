@@ -1,9 +1,11 @@
 import { Header, v, useOperaciones, Tipo, Btndesplegable, ListaMenuDesplegable, DataDesplegableCuenta, RegistrarCuentas, Cuenta, CuentaInsert, CuentaUpdate, Accion, showSuccessMessage, showErrorMessage } from "../../index";
 import { useState } from "react";
 import { useUsuariosStore, useCuentaStore } from "../../index";
-import Swal from "sweetalert2";
 import { Container, ContentFiltro } from "./CuentasTemplate.styles";
 import { MovimientosCuentaModal } from "./MovimientosCuentaModal";
+import { AnimatePresence } from "motion/react";
+import { ConfirmDialog } from "../moleculas/ConfirmDialog";
+import { RefreshCw } from "lucide-react";
 
 interface CuentasTemplateProps {
 	data: Cuenta[];
@@ -14,11 +16,14 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 	const [openRegistro, setOpenRegistro] = useState(false);
 	const [cuentaSeleccionada, setCuentaSeleccionada] = useState<Cuenta | null>(null);
 	const { usuario } = useUsuariosStore();
-	const { eliminarCuenta } = useCuentaStore();
+	const { actualizarCuenta, eliminarCuenta } = useCuentaStore();
 	const [accion, setAccion] = useState<Accion>("Nuevo");
 	const [dataSelect, setDataSelect] = useState<CuentaInsert | CuentaUpdate>({});
 	const [stateTipo, setStateTipo] = useState(false);
 	const { selectTipoCuenta, setTipoCuenta } = useOperaciones();
+	const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+	const [recalculatingId, setRecalculatingId] = useState<number | null>(null);
 
 	const cambiarTipo = (p: Tipo) => {
 		setTipoCuenta(p);
@@ -53,25 +58,41 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 		setOpenRegistro(true);
 	};
 
-	const handleDelete = async (id: number) => {
-		const result = await Swal.fire({
-			title: '¿Estás seguro?',
-			text: "No podrás revertir esta acción",
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonColor: '#3085d6',
-			cancelButtonColor: '#d33',
-			confirmButtonText: 'Sí, eliminar',
-			cancelButtonText: 'Cancelar'
-		});
+	const handleDelete = (id: number) => {
+		setConfirmDeleteId(id);
+	};
 
-		if (result.isConfirmed) {
-			try {
-				await eliminarCuenta(id);
-				showSuccessMessage('Cuenta eliminada correctamente');
-			} catch (error) {
-				showErrorMessage('Error al eliminar la cuenta');
-			}
+	const confirmDelete = async () => {
+		if (confirmDeleteId == null) return;
+		setIsDeleting(true);
+		try {
+			const success = await eliminarCuenta(confirmDeleteId);
+			if (!success) throw new Error('No se pudo eliminar la cuenta');
+			showSuccessMessage('Cuenta eliminada correctamente');
+		} catch (error) {
+			showErrorMessage('Error al eliminar la cuenta');
+		} finally {
+			setIsDeleting(false);
+			setConfirmDeleteId(null);
+		}
+	};
+
+	const recalcularSaldo = async (cuenta: Cuenta) => {
+		setRecalculatingId(cuenta.id);
+		try {
+			const response = await actualizarCuenta(cuenta.id, {
+				descripcion: cuenta.descripcion,
+				icono: cuenta.icono,
+				tipo: cuenta.tipo,
+				idusuario: cuenta.idusuario,
+				saldo_actual: 0,
+			});
+			if (!response) throw new Error("No se pudo recalcular el saldo");
+			showSuccessMessage("Saldo recalculado correctamente");
+		} catch (error) {
+			showErrorMessage("Error al recalcular el saldo");
+		} finally {
+			setRecalculatingId(null);
 		}
 	};
 
@@ -98,6 +119,19 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 					onClose={() => setCuentaSeleccionada(null)}
 				/>
 			)}
+
+			<AnimatePresence>
+				{confirmDeleteId != null && (
+					<ConfirmDialog
+						title="¿Eliminar cuenta?"
+						message="No podrás revertir esta acción."
+						confirmText="Sí, eliminar"
+						onConfirm={confirmDelete}
+						onCancel={() => setConfirmDeleteId(null)}
+						isLoading={isDeleting}
+					/>
+				)}
+			</AnimatePresence>
 
 			<header className="header">
 				<Header stateConfig={{ state: state, setState: openUser }} />
@@ -194,6 +228,19 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
                   <span className="balance-label">Saldo disponible</span>
                 </div>
 								<div className="card-actions">
+									<button
+                    type="button"
+										className="recalculate-action"
+										onClick={(e) => {
+											e.stopPropagation();
+											void recalcularSaldo(cuenta);
+										}}
+                    aria-label={`Recalcular saldo de ${cuenta.descripcion}`}
+										title="Recalcular saldo"
+										disabled={recalculatingId === cuenta.id}
+									>
+										<RefreshCw size={16} />
+									</button>
 									<button
                     type="button"
 										onClick={(e) => {

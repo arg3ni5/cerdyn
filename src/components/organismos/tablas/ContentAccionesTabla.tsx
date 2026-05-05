@@ -11,8 +11,8 @@ interface ContentAccionesTablaProps {
 export const ContentAccionesTabla = ({ funcionEditar, funcionEliminar }: ContentAccionesTablaProps): JSX.Element => {
   return (
     <Container>
-      <AccionTabla funcion={funcionEditar} fontSize="18px" color="#7d7d7d" icono={<v.iconeditarTabla />} />
-      <AccionTabla funcion={funcionEliminar} fontSize="20px" color="#f76e8e" icono={<v.iconeliminarTabla />} />
+      <AccionTabla funcion={funcionEditar} fontSize="18px" color="#7d7d7d" icono={<v.iconeditarTabla />} label="Editar" />
+      <AccionTabla funcion={funcionEliminar} fontSize="20px" color="#f76e8e" icono={<v.iconeliminarTabla />} label="Eliminar" />
     </Container>
   );
 };
@@ -22,16 +22,34 @@ const Container = styled.div`
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
-  @media (max-width: 48em) {
-    justify-content: end;
-  }
-  // Increase button size on mobile devices
-  @media (max-width: 768px) { // Assuming 768px as a common breakpoint for mobile
-    gap: 15px; // Increase gap for better spacing
 
-    & > div { // Target the div element inside Container
-      font-size: 24px !important; // Increase font size for icons
-      padding: 8px !important; // Add padding for a larger touch target
+  @media (max-width: 48em) {
+    justify-content: flex-end;
+    gap: 8px;
+
+    button {
+      min-height: 42px;
+      min-width: 108px;
+      border-radius: 10px;
+      border: 1px solid currentColor;
+      font-size: 18px;
+      font-weight: 800;
+      gap: 8px;
+      padding: 9px 12px;
+    }
+
+    button:first-child {
+      background: rgba(125, 125, 125, 0.12);
+    }
+
+    button:last-child {
+      background: rgba(247, 110, 142, 0.14);
+    }
+
+    button span {
+      display: inline;
+      color: ${({ theme }) => theme.text};
+      font-size: 13px;
     }
   }
 `;

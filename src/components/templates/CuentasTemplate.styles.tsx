@@ -298,14 +298,29 @@ export const Container = styled.div`
           background: ${({ theme }) => theme.bgAlpha};
           border: none;
           cursor: pointer;
-          padding: 0.45rem 0.65rem;
+          width: 34px;
+          height: 34px;
+          padding: 0;
           border-radius: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           transition: background-color 0.2s ease, transform 0.2s ease;
 
           &:hover {
             background: ${({ theme }) => theme.bg4};
             transform: translateY(-1px);
           }
+
+          &:disabled {
+            cursor: wait;
+            opacity: 0.65;
+            transform: none;
+          }
+        }
+
+        .recalculate-action:disabled svg {
+          animation: spin 0.9s linear infinite;
         }
       }
     }
@@ -333,6 +348,12 @@ export const Container = styled.div`
         margin: 0;
         color: ${({ theme }) => theme.colorSubtitle};
       }
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 `;

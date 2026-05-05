@@ -187,7 +187,9 @@ END;
 $$;
 
 -- 6. Actualizar la función mmovimientosmesanio para soportar tipo 't'
---    El tipo 't' retorna transferencias con los nombres de las cuentas
+--    Retorna los datos necesarios para tablas e informes (Excel/PDF).
+DROP FUNCTION IF EXISTS public.mmovimientosmesanio(INTEGER, INTEGER, INTEGER, TEXT);
+
 CREATE OR REPLACE FUNCTION public.mmovimientosmesanio(
   anio INTEGER,
   mes INTEGER,
@@ -198,74 +200,114 @@ RETURNS TABLE(
   id INTEGER,
   descripcion TEXT,
   valor NUMERIC,
-  fecha TEXT,
+  fecha DATE,
   estado BOOLEAN,
+  idcuenta INTEGER,
   cuenta TEXT,
+  idcategoria INTEGER,
   categoria TEXT,
   valorymoneda TEXT,
   idcuenta_origen INTEGER,
-  idcuenta_destino INTEGER
+  cuenta_origen TEXT,
+  idcuenta_destino INTEGER,
+  cuenta_destino TEXT
 )
-LANGUAGE plpgsql
+LANGUAGE sql
 AS $$
-DECLARE
-  v_fecha_inicio DATE;
-  v_fecha_fin DATE;
-  v_moneda TEXT;
-BEGIN
-  v_fecha_inicio := make_date(anio, mes, 1);
-  v_fecha_fin := v_fecha_inicio + INTERVAL '1 month';
-
-  SELECT COALESCE(u.moneda, '$') INTO v_moneda
-  FROM public.usuarios u WHERE u.id = iduser;
-
-  IF tipocategoria = 't' THEN
-    RETURN QUERY
-    SELECT
-      m.id,
-      m.descripcion,
-      m.valor,
-      m.fecha::TEXT,
-      m.estado,
-      CONCAT(co.descripcion, ' → ', cd.descripcion) AS cuenta,
-      'Transferencia'::TEXT AS categoria,
-      CONCAT(v_moneda, ' ', TO_CHAR(m.valor, 'FM999,999,999.00')) AS valorymoneda,
-      m.idcuenta_origen,
-      m.idcuenta_destino
-    FROM public.movimientos m
-    JOIN public.cuenta co ON m.idcuenta_origen = co.id
-    JOIN public.cuenta cd ON m.idcuenta_destino = cd.id
-    WHERE m.tipo = 't'
-      AND m.idusuario = iduser
-      AND m.fecha::DATE >= v_fecha_inicio
-      AND m.fecha::DATE < v_fecha_fin
-    ORDER BY m.fecha DESC;
-  ELSE
-    RETURN QUERY
-    SELECT
-      m.id,
-      m.descripcion,
-      m.valor,
-      m.fecha::TEXT,
-      m.estado,
-      COALESCE(c.descripcion, '')::TEXT AS cuenta,
-      COALESCE(cat.descripcion, '')::TEXT AS categoria,
-      CONCAT(v_moneda, ' ', TO_CHAR(m.valor, 'FM999,999,999.00')) AS valorymoneda,
-      NULL::INTEGER AS idcuenta_origen,
-      NULL::INTEGER AS idcuenta_destino
-    FROM public.movimientos m
-    LEFT JOIN public.cuenta c ON m.idcuenta = c.id
-    LEFT JOIN public.categorias cat ON m.idcategoria = cat.id
-    WHERE m.tipo = tipocategoria
-      AND m.idusuario = iduser
-      AND m.fecha::DATE >= v_fecha_inicio
-      AND m.fecha::DATE < v_fecha_fin
-    ORDER BY m.fecha DESC;
-  END IF;
-END;
+SELECT
+  m.id,
+  m.descripcion,
+  m.valor,
+  m.fecha,
+  (m.estado::BOOLEAN) AS estado,
+  m.idcuenta,
+  c.descripcion AS cuenta,
+  m.idcategoria,
+  cat.descripcion AS categoria,
+  (u.moneda || ' ' || m.valor) AS valorymoneda,
+  m.idcuenta_origen,
+  co.descripcion AS cuenta_origen,
+  m.idcuenta_destino,
+  cd.descripcion AS cuenta_destino
+FROM public.movimientos m
+LEFT JOIN public.cuenta c ON c.id = m.idcuenta
+INNER JOIN public.usuarios u ON u.id = m.idusuario
+LEFT JOIN public.categorias cat ON cat.id = m.idcategoria
+LEFT JOIN public.cuenta co ON co.id = m.idcuenta_origen
+LEFT JOIN public.cuenta cd ON cd.id = m.idcuenta_destino
+WHERE
+  m.tipo = tipocategoria::movement_type
+  AND DATE_PART('year', m.fecha) = anio
+  AND DATE_PART('month', m.fecha) = mes
+  AND m.idusuario = iduser
+ORDER BY m.fecha DESC;
 $$;
 
--- 7. Recalcular resúmenes existentes para incluir transferencias históricas (si hubiera)
+-- 7. Función para informes: retorna todos los tipos del mes sin filtrar.
+DROP FUNCTION IF EXISTS public.mmovimientosmesanio_all(INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.mmovimientosmesanio_all(INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.mmovimientosmesanio_all(INTEGER, INTEGER, UUID);
+
+CREATE OR REPLACE FUNCTION public.mmovimientosmesanio_all(
+  anio INTEGER,
+  mes INTEGER,
+  iduser INTEGER,
+  p_idcuenta INTEGER DEFAULT NULL
+)
+RETURNS TABLE(
+  id INTEGER,
+  fecha DATE,
+  descripcion TEXT,
+  cuenta TEXT,
+  categoria TEXT,
+  tipocategoria TEXT,
+  estado BOOLEAN,
+  monto NUMERIC,
+  idcuenta_origen INTEGER,
+  cuenta_origen TEXT,
+  idcuenta_destino INTEGER,
+  cuenta_destino TEXT
+)
+LANGUAGE sql
+AS $$
+SELECT
+  m.id,
+  m.fecha,
+  m.descripcion,
+  CASE
+    WHEN m.tipo::TEXT = 't' THEN CONCAT_WS(' -> ', co.descripcion, cd.descripcion)
+    ELSE c.descripcion
+  END AS cuenta,
+  CASE
+    WHEN m.tipo::TEXT = 't' THEN 'Transferencia'
+    ELSE cat.descripcion
+  END AS categoria,
+  m.tipo::TEXT AS tipocategoria,
+  (m.estado::BOOLEAN) AS estado,
+  m.valor AS monto,
+  m.idcuenta_origen,
+  co.descripcion AS cuenta_origen,
+  m.idcuenta_destino,
+  cd.descripcion AS cuenta_destino
+FROM public.movimientos m
+LEFT JOIN public.cuenta c ON c.id = m.idcuenta
+LEFT JOIN public.categorias cat ON cat.id = m.idcategoria
+LEFT JOIN public.cuenta co ON co.id = m.idcuenta_origen
+LEFT JOIN public.cuenta cd ON cd.id = m.idcuenta_destino
+WHERE
+  DATE_PART('year', m.fecha) = anio
+  AND DATE_PART('month', m.fecha) = mes
+  AND m.idusuario = iduser
+  AND (
+    p_idcuenta IS NULL
+    OR m.idcuenta = p_idcuenta
+    OR m.idcuenta_origen = p_idcuenta
+    OR m.idcuenta_destino = p_idcuenta
+  )
+ORDER BY m.fecha DESC;
+$$;
+
+-- 8. Recalcular resúmenes existentes para incluir transferencias históricas (si hubiera)
 -- (Este paso es idempotente y seguro de ejecutar)
 DO $$
 DECLARE

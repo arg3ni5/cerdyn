@@ -1,7 +1,8 @@
 import ExcelJS from 'exceljs';
 import { downloadBlob } from '../export/downloadUtils';
 
-export type ImportTipo = 'i' | 'g';
+export type ImportTipo = 'i' | 'g' | 't';
+type CategoriaTipo = 'i' | 'g';
 
 export interface ParsedMovimientoRow {
   rowNumber: number;
@@ -12,6 +13,8 @@ export interface ParsedMovimientoRow {
   valor: number | null;
   idcategoria: number | null;
   idcuenta: number | null;
+  idcuenta_origen: number | null;
+  idcuenta_destino: number | null;
 }
 
 export interface CategoriaImportRef {
@@ -31,18 +34,20 @@ export type ValidationIssueCode =
   | 'INVALID_DATE'
   | 'INVALID_VALUE'
   | 'INVALID_TYPE'
-  | 'TRANSFER_NOT_ALLOWED'
   | 'MISSING_CATEGORY'
   | 'INVALID_CATEGORY'
   | 'MISSING_ACCOUNT'
-  | 'INVALID_ACCOUNT';
+  | 'INVALID_ACCOUNT'
+  | 'MISSING_TRANSFER_ACCOUNT'
+  | 'INVALID_TRANSFER_ACCOUNT'
+  | 'SAME_TRANSFER_ACCOUNT';
 
 export interface ValidationIssue {
   code: ValidationIssueCode;
   rowNumber: number;
   message: string;
   groupKey?: string;
-  tipo?: ImportTipo | null;
+  tipo?: CategoriaTipo | null;
 }
 
 export interface ValidationResult {
@@ -55,14 +60,14 @@ export interface ValidationResult {
 
 export interface CategoryIssueGroup {
   key: string;
-  tipo: ImportTipo | null;
+  tipo: CategoriaTipo | null;
   count: number;
   rowNumbers: number[];
   currentCategoryId: number | null;
   label: string;
 }
 
-const HEADER_KEYS = ['fecha', 'descripcion', 'tipo', 'valor', 'idcategoria', 'idcuenta'] as const;
+const HEADER_KEYS = ['fecha', 'descripcion', 'tipo', 'valor', 'idcategoria', 'idcuenta', 'idcuenta_origen', 'idcuenta_destino'] as const;
 
 const normalizeHeader = (value: unknown): string => {
   return String(value ?? '')
@@ -99,11 +104,11 @@ const asNumber = (value: unknown): number | null => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-export const normalizeTipo = (tipo: unknown): { kind: 'valid' | 'transfer' | 'invalid'; value: ImportTipo | null; raw: string } => {
+export const normalizeTipo = (tipo: unknown): { kind: 'valid' | 'invalid'; value: ImportTipo | null; raw: string } => {
   const raw = String(tipo ?? '').trim().toLowerCase();
   if (raw === 'i' || raw === 'ingreso') return { kind: 'valid', value: 'i', raw };
   if (raw === 'g' || raw === 'gasto') return { kind: 'valid', value: 'g', raw };
-  if (raw === 't' || raw === 'transferencia') return { kind: 'transfer', value: null, raw };
+  if (raw === 't' || raw === 'transferencia') return { kind: 'valid', value: 't', raw };
   return { kind: 'invalid', value: null, raw };
 };
 
@@ -121,7 +126,9 @@ const isRowEmpty = (row: ParsedMovimientoRow): boolean => {
     row.tipoRaw.trim() === '' &&
     row.valor == null &&
     row.idcategoria == null &&
-    row.idcuenta == null
+    row.idcuenta == null &&
+    row.idcuenta_origen == null &&
+    row.idcuenta_destino == null
   );
 };
 
@@ -159,6 +166,8 @@ export const parseMovimientosWorkbook = async (buffer: ArrayBuffer): Promise<Par
       valor: '',
       idcategoria: '',
       idcuenta: '',
+      idcuenta_origen: '',
+      idcuenta_destino: '',
     };
 
     for (const key of HEADER_KEYS) {
@@ -176,6 +185,8 @@ export const parseMovimientosWorkbook = async (buffer: ArrayBuffer): Promise<Par
       valor: asNumber(values.valor),
       idcategoria: parseId(values.idcategoria),
       idcuenta: parseId(values.idcuenta),
+      idcuenta_origen: parseId(values.idcuenta_origen),
+      idcuenta_destino: parseId(values.idcuenta_destino),
     };
 
     if (!isRowEmpty(parsed)) {
@@ -192,8 +203,9 @@ const isValidDate = (dateString: string): boolean => {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === dateString;
 };
 
-const normalizeCategoryTipo = (tipo: string | null): ImportTipo | null => {
-  return normalizeTipo(tipo).value;
+const normalizeCategoryTipo = (tipo: string | null): CategoriaTipo | null => {
+  const value = normalizeTipo(tipo).value;
+  return value === 'i' || value === 'g' ? value : null;
 };
 
 export const validateImportRows = (
@@ -228,22 +240,19 @@ export const validateImportRows = (
       });
     }
 
-    if (tipoResult.kind === 'transfer') {
+    if (tipoResult.value === 't') {
       transferCount += 1;
-      issues.push({
-        code: 'TRANSFER_NOT_ALLOWED',
-        rowNumber: row.rowNumber,
-        message: `Fila ${row.rowNumber}: transferencia no permitida en este import`,
-      });
-    } else if (tipoResult.kind === 'invalid') {
+    }
+
+    if (tipoResult.kind === 'invalid') {
       issues.push({
         code: 'INVALID_TYPE',
         rowNumber: row.rowNumber,
-        message: `Fila ${row.rowNumber}: tipo inválido (${row.tipoRaw || 'vacío'}), solo ingreso/gasto`,
+        message: `Fila ${row.rowNumber}: tipo inválido (${row.tipoRaw || 'vacío'}), usa ingreso, gasto o transferencia`,
       });
     }
 
-    if (tipoResult.kind === 'valid') {
+    if (tipoResult.value === 'i' || tipoResult.value === 'g') {
       if (row.idcategoria == null) {
         issues.push({
           code: 'MISSING_CATEGORY',
@@ -267,7 +276,7 @@ export const validateImportRows = (
       }
     }
 
-    if (tipoResult.kind === 'valid' && row.idcuenta == null) {
+    if ((tipoResult.value === 'i' || tipoResult.value === 'g') && row.idcuenta == null) {
       issues.push({
         code: 'MISSING_ACCOUNT',
         rowNumber: row.rowNumber,
@@ -281,6 +290,44 @@ export const validateImportRows = (
         rowNumber: row.rowNumber,
         message: `Fila ${row.rowNumber}: idcuenta inválida (${row.idcuenta})`,
       });
+    }
+
+    if (tipoResult.value === 't') {
+      if (row.idcuenta_origen == null) {
+        issues.push({
+          code: 'MISSING_TRANSFER_ACCOUNT',
+          rowNumber: row.rowNumber,
+          message: `Fila ${row.rowNumber}: falta idcuenta_origen para transferencia`,
+        });
+      } else if (!userAccounts.has(row.idcuenta_origen)) {
+        issues.push({
+          code: 'INVALID_TRANSFER_ACCOUNT',
+          rowNumber: row.rowNumber,
+          message: `Fila ${row.rowNumber}: idcuenta_origen inválida (${row.idcuenta_origen})`,
+        });
+      }
+
+      if (row.idcuenta_destino == null) {
+        issues.push({
+          code: 'MISSING_TRANSFER_ACCOUNT',
+          rowNumber: row.rowNumber,
+          message: `Fila ${row.rowNumber}: falta idcuenta_destino para transferencia`,
+        });
+      } else if (!userAccounts.has(row.idcuenta_destino)) {
+        issues.push({
+          code: 'INVALID_TRANSFER_ACCOUNT',
+          rowNumber: row.rowNumber,
+          message: `Fila ${row.rowNumber}: idcuenta_destino inválida (${row.idcuenta_destino})`,
+        });
+      }
+
+      if (row.idcuenta_origen != null && row.idcuenta_destino != null && row.idcuenta_origen === row.idcuenta_destino) {
+        issues.push({
+          code: 'SAME_TRANSFER_ACCOUNT',
+          rowNumber: row.rowNumber,
+          message: `Fila ${row.rowNumber}: la cuenta origen y destino deben ser diferentes`,
+        });
+      }
     }
   }
 
@@ -369,9 +416,10 @@ export const downloadMovimientosImportTemplate = async (categories: TemplateCate
   workbook.created = new Date();
 
   const movimientosSheet = workbook.addWorksheet('Movimientos');
-  movimientosSheet.addRow(['fecha', 'descripcion', 'tipo', 'valor', 'idcategoria', 'idcuenta']);
-  movimientosSheet.addRow(['2026-01-15', 'Ejemplo supermercado', 'gasto', 24500, 1, 1]);
-  movimientosSheet.addRow(['2026-01-20', 'Ejemplo salario', 'ingreso', 850000, 2, 1]);
+  movimientosSheet.addRow(['fecha', 'descripcion', 'tipo', 'valor', 'idcategoria', 'idcuenta', 'idcuenta_origen', 'idcuenta_destino']);
+  movimientosSheet.addRow(['2026-01-15', 'Ejemplo supermercado', 'gasto', 24500, 1, 1, '', '']);
+  movimientosSheet.addRow(['2026-01-20', 'Ejemplo salario', 'ingreso', 850000, 2, 1, '', '']);
+  movimientosSheet.addRow(['2026-01-25', 'Ejemplo transferencia a ahorros', 'transferencia', 50000, '', '', 1, 2]);
   movimientosSheet.columns = [
     { key: 'fecha', width: 14 },
     { key: 'descripcion', width: 42 },
@@ -379,11 +427,17 @@ export const downloadMovimientosImportTemplate = async (categories: TemplateCate
     { key: 'valor', width: 14 },
     { key: 'idcategoria', width: 14 },
     { key: 'idcuenta', width: 12 },
+    { key: 'idcuenta_origen', width: 18 },
+    { key: 'idcuenta_destino', width: 18 },
   ];
   movimientosSheet.getRow(1).font = { bold: true };
   movimientosSheet.getCell('A1').note = 'Formato YYYY-MM-DD';
-  movimientosSheet.getCell('C1').note = 'Solo ingreso o gasto';
+  movimientosSheet.getCell('C1').note = 'Ingreso, gasto o transferencia';
   movimientosSheet.getCell('D1').note = 'Número mayor a 0';
+  movimientosSheet.getCell('E1').note = 'Requerido solo para ingresos y gastos';
+  movimientosSheet.getCell('F1').note = 'Requerido solo para ingresos y gastos';
+  movimientosSheet.getCell('G1').note = 'Requerido solo para transferencias';
+  movimientosSheet.getCell('H1').note = 'Requerido solo para transferencias';
 
   const categoriasSheet = workbook.addWorksheet('Categorias');
   categoriasSheet.addRow(['tipo', 'idcategoria', 'descripcion']);

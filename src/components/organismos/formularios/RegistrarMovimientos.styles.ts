@@ -41,11 +41,21 @@ export const Container = styled(motion.div)`
       padding: 24px 24px 0;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: 0;
+      padding-right: 76px;
 
       @media (min-width: 640px) {
         padding: 40px 40px 0;
+        padding-right: 96px;
+      }
+
+      .encabezado-contenido {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        min-width: 0;
       }
 
       h1 {
@@ -53,10 +63,15 @@ export const Container = styled(motion.div)`
         font-weight: 900;
         text-transform: uppercase;
         line-height: 1.2;
+        margin: 0;
 
         @media (min-width: 640px) {
           font-size: 30px;
         }
+      }
+
+      .selector-tipo-movimiento {
+        max-width: 100%;
       }
     }
 
@@ -115,6 +130,11 @@ export const CloseButton = styled.button`
     background-color: rgba(225, 78, 25, 0.05);
   }
 
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
   @media (min-width: 640px) {
     top: 40px;
     right: 40px;
@@ -148,15 +168,54 @@ export const ContainerMonto = styled.div`
   }
 `;
 
+export const ContainerDescripcion = styled(ContainerMonto)`
+  gap: 8px;
+
+  label {
+    margin-bottom: 0;
+  }
+`;
+
 export const ContainerFuepagado = styled.div`
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
   flex: 1;
 
-  span {
+  label {
+    margin-bottom: 0;
+  }
+
+  .pago-control {
+    min-height: 48px;
     display: flex;
     align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(156, 163, 175, 0.2);
+    border-radius: 12px;
+    padding: 4px 6px 4px 14px;
+  }
+
+  .pago-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f97316;
+    flex: 0 0 auto;
+  }
+
+  .pago-text {
+    color: ${({ theme }) => theme.text};
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+    min-width: 72px;
+  }
+
+  .MuiSwitch-root {
+    margin-left: auto;
   }
 `;
 
@@ -165,7 +224,7 @@ export const ContenedorDropdown = styled.div<{ $active?: boolean }>`
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 
   label {
     margin-bottom: 0;

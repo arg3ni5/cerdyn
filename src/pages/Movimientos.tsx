@@ -6,12 +6,15 @@ import {
   useMovimientosStore,
   DataMovimientos,
   useLoading,
+  useCategoriasStore,
+  Categoria,
 } from "../index";
 import { useQuery } from "@tanstack/react-query";
 
 export const Movimientos = () => {
   const { selectTipoMovimiento: tipo, date } = useOperaciones();
   const { mostrarMovimientos, setDatamovimientos, setFiltros } = useMovimientosStore();
+  const { mostrarCategorias } = useCategoriasStore();
   const { usuario } = useUsuariosStore();
   const { setIsLoading } = useLoading();
   const isDev = import.meta.env.DEV;
@@ -32,6 +35,20 @@ export const Movimientos = () => {
     refetchOnMount: isDev ? "always" : true,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  useQuery<Categoria[], Error>({
+    queryKey: ["mostrar categorias movimientos", usuario?.id, tipo.tipo],
+    queryFn: () =>
+      mostrarCategorias({
+        idusuario: usuario?.id ?? 0,
+        tipo: tipo.tipo === "i" || tipo.tipo === "g" ? tipo.tipo : undefined,
+      }),
+    enabled: !!usuario?.id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

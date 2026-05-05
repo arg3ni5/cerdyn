@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   MostrarMovimientosPorMesAño,
+  MostrarMovimientosPorMesAñoAll,
   InsertarMovimientos,
   EliminarMovimientos,
   RptMovimientosPorMesAño,
@@ -42,6 +43,9 @@ export interface DataMovimientos {
   g: MovimientosMesAnio;
   t: MovimientosMesAnio;
 }
+export type MovimientosConsultaParams = MovimientosMesAnioParams & {
+  p_idcuenta?: number | null;
+};
 interface MovimientosState {
   datamovimientos: DataMovimientos;
   rptParams: RptMovimientosMesAnioParams;
@@ -53,9 +57,9 @@ interface MovimientosState {
   gastosPagadosMes: number;
   filtroDescripcion: string;
   filtroCategoria: string;
-  parametros: MovimientosMesAnioParams;
+  parametros: MovimientosConsultaParams;
   setFiltros: (descripcion: string, categoria: string) => void;
-  mostrarMovimientos: (p: MovimientosMesAnioParams) => Promise<DataMovimientos>;
+  mostrarMovimientos: (p: MovimientosConsultaParams) => Promise<DataMovimientos>;
   setDatamovimientos: (data: DataMovimientos) => void;
   calcularTotales: (data: DataMovimientos) => void;
   insertarMovimientos: (p: MovimientoInsert) => Promise<void>;
@@ -78,25 +82,61 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
   gastosPagadosMes: 0,
   filtroDescripcion: "",
   filtroCategoria: "",
-  parametros: {} as MovimientosMesAnioParams,
+  parametros: {} as MovimientosConsultaParams,
 
   setFiltros: (descripcion: string, categoria: string) => {
     set({ filtroDescripcion: descripcion, filtroCategoria: categoria });
   },
 
-  mostrarMovimientos: async (p: MovimientosMesAnioParams) => {
+  mostrarMovimientos: async (p: MovimientosConsultaParams) => {
     try {
       set({ parametros: p });
-      const currentState = get();
 
-      let i = p.tipocategoria === "i" || p.tipocategoria === "b" ?
+      if (p.tipocategoria === "b" || p.p_idcuenta != null) {
+        const rows = await MostrarMovimientosPorMesAñoAll({
+          anio: p.anio,
+          mes: p.mes,
+          iduser: p.iduser,
+          p_idcuenta: p.p_idcuenta,
+        }) || [];
+
+        const response: DataMovimientos = { i: [], g: [], t: [] };
+
+        rows.forEach((item) => {
+          if (item.tipocategoria !== "i" && item.tipocategoria !== "g" && item.tipocategoria !== "t") return;
+          if (p.tipocategoria !== "b" && item.tipocategoria !== p.tipocategoria) return;
+
+          response[item.tipocategoria].push({
+            id: item.id,
+            descripcion: item.descripcion,
+            valor: item.monto,
+            fecha: item.fecha,
+            estado: esPagado(item.estado),
+            idcuenta: null,
+            cuenta: item.cuenta,
+            idcategoria: null,
+            categoria: item.categoria,
+            valorymoneda: new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(item.monto),
+            idcuenta_origen: item.idcuenta_origen,
+            cuenta_origen: item.cuenta_origen,
+            idcuenta_destino: item.idcuenta_destino,
+            cuenta_destino: item.cuenta_destino,
+          } as MovimientosMesAnio[number]);
+        });
+
+        const { setDatamovimientos } = get();
+        setDatamovimientos(response);
+        return response;
+      }
+
+      const currentState = get();
+      let i = p.tipocategoria === "i" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "i" }) || [] : currentState.datamovimientos.i || [];
-      let g = p.tipocategoria === "g" || p.tipocategoria === "b" ?
+      let g = p.tipocategoria === "g" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "g" }) || [] : currentState.datamovimientos.g || [];
-      let t = p.tipocategoria === "t" || p.tipocategoria === "b" ?
+      let t = p.tipocategoria === "t" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "t" }) || [] : currentState.datamovimientos.t || [];
 
-      // Convertir estado a booleano
       i = i?.map(item => ({
         ...item,
         estado: esPagado(item.estado)

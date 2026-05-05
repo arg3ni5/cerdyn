@@ -257,21 +257,26 @@ export type Database = {
           valor: number;
           fecha: string;
           estado: boolean;
+          idcuenta: number | null;
           cuenta: string;
+          idcategoria: number | null;
           categoria: string;
           valorymoneda: string;
           idcuenta_origen: number | null;
+          cuenta_origen: string | null;
           idcuenta_destino: number | null;
+          cuenta_destino: string | null;
         }[];
       };
       mmovimientosmesanio_all: {
         Args: {
           anio: number;
           mes: number;
-          iduser: string;
+          iduser: number;
+          p_idcuenta?: number | null;
         };
         Returns: {
-          id: string;
+          id: number;
           fecha: string;
           descripcion: string;
           cuenta: string;
@@ -279,6 +284,10 @@ export type Database = {
           tipocategoria: string;
           estado: boolean;
           monto: number;
+          idcuenta_origen: number | null;
+          cuenta_origen: string | null;
+          idcuenta_destino: number | null;
+          cuenta_destino: string | null;
         }[];
       };
       mmovimientosmesaniotop5: {
@@ -332,6 +341,13 @@ export type Database = {
       fn_obtener_saldo_cuenta_a_fecha: {
         Args: {
           p_idcuenta: number;
+          p_fecha: string;
+        };
+        Returns: number;
+      };
+      fn_obtener_saldo_usuario_a_fecha: {
+        Args: {
+          p_idusuario: number;
           p_fecha: string;
         };
         Returns: number;

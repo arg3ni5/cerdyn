@@ -70,7 +70,15 @@ function MyComponent() {
 **Ubicación**: `src/context/LoadingContext.tsx`
 
 #### Propósito
-Mostrar loader global cuando la app está cargando datos.
+Mostrar `SpinnerLoader` global cuando una parte de la app necesita activar carga de pantalla completa desde contexto.
+
+La convención actual separa responsabilidades:
+
+- `SpinnerLoader`: carga global de página/ruta. Cubre toda la ventana.
+- `Spinner`: carga local dentro de un contenedor, normalmente para guardar en formularios.
+- `LoadingContext`: mecanismo opcional para controlar `SpinnerLoader` desde componentes que no pueden devolver directamente el loader.
+
+Si una página ya hace `return <SpinnerLoader />` para su query principal, no debe activar además `setIsLoading(isLoading)` para la misma carga.
 
 #### Hook useLoading()
 ```typescript
@@ -183,7 +191,7 @@ function MiComponente() {
 
   return (
     <div>
-      {isLoading && <Spinner />}
+      {isLoading && <SpinnerLoader />}
       {movimientos.map(...)}
     </div>
   );
