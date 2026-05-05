@@ -19,12 +19,22 @@ export const Container = styled.div<ContainerProps>`
   color: ${({ theme }) => theme.text};
   display: grid;
   gap: 22px;
-  grid-template:
-    "header" auto
-    "hero" auto
-    "totales" auto
-    "main" auto
-    "empty" auto;
+  grid-template: ${({ $isBalanceActive }) =>
+    $isBalanceActive
+      ? `
+        "header" auto
+        "hero" auto
+        "balance-trace" auto
+        "main" auto
+        "empty" auto
+      `
+      : `
+        "header" auto
+        "hero" auto
+        "totales" auto
+        "main" auto
+        "empty" auto
+      `};
 
   .header {
     margin-left: 15px;
@@ -166,6 +176,243 @@ export const TypeBadge = styled.div<AccentProps>`
   background: ${({ $bgcolor }) => $bgcolor};
   color: ${({ $textcolor }) => $textcolor};
   font-weight: 800;
+`;
+
+export const BalanceTrace = styled.section`
+  grid-area: balance-trace;
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 28px;
+  background: ${({ theme }) => theme.bg3};
+  border: 1px solid rgba(151, 151, 151, 0.12);
+  box-shadow: 0 18px 36px rgba(18, 47, 79, 0.08);
+
+  .trace-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(151, 151, 151, 0.18);
+  }
+
+  .trace-title {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+
+    span {
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: ${({ theme }) => theme.colorSubtitle};
+    }
+
+    small {
+      color: ${({ theme }) => theme.colorSubtitle};
+      font-size: 0.9rem;
+    }
+  }
+
+  .trace-amount-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex-wrap: wrap;
+
+    strong {
+      font-size: clamp(1.55rem, 3vw, 2rem);
+      line-height: 1;
+    }
+  }
+
+  .trace-actions {
+    display: inline-flex;
+    gap: 6px;
+    padding: 5px;
+    border-radius: 999px;
+    background: ${({ theme }) => theme.bgAlpha};
+    border: 1px solid rgba(151, 151, 151, 0.16);
+
+    button {
+      min-height: 36px;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: transparent;
+      color: ${({ theme }) => theme.text};
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 800;
+      white-space: nowrap;
+      transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &.active {
+        background: ${({ theme }) => theme.primary};
+        color: #ffffff;
+      }
+    }
+  }
+
+  .trace-formula {
+    width: fit-content;
+    padding: 9px 12px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.12);
+    color: ${({ theme }) => theme.text};
+    font-size: 0.82rem;
+    font-weight: 800;
+
+    .formula-ingreso {
+      color: #10b981;
+    }
+
+    .formula-gasto {
+      color: #ef4444;
+    }
+  }
+
+  .trace-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .summary-item {
+    min-width: 0;
+    padding: 14px;
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0)),
+      ${({ theme }) => theme.bgAlpha};
+    border: 1px solid rgba(151, 151, 151, 0.12);
+    display: grid;
+    gap: 8px;
+
+    span {
+      color: ${({ theme }) => theme.colorSubtitle};
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    strong {
+      font-size: 1.08rem;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    &.positivo strong {
+      color: #10b981;
+    }
+
+    &.negativo strong {
+      color: #ef4444;
+    }
+
+    &.neutro strong {
+      color: #8b5cf6;
+    }
+  }
+
+  .trace-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .trace-item {
+    min-width: 0;
+    padding: 14px;
+    border-radius: 18px;
+    background: ${({ theme }) => theme.bgAlpha};
+    display: grid;
+    gap: 8px;
+    align-content: start;
+
+    span,
+    small {
+      color: ${({ theme }) => theme.colorSubtitle};
+    }
+
+    span {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    strong {
+      font-size: 1.12rem;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    small {
+      font-size: 0.82rem;
+      line-height: 1.3;
+    }
+
+    &.ingreso strong {
+      color: #10b981;
+    }
+
+    &.gasto strong {
+      color: #ef4444;
+    }
+
+    &.transferencia strong {
+      color: #3b82f6;
+    }
+
+    &.muted {
+      opacity: 0.68;
+
+      strong {
+        color: ${({ theme }) => theme.colorSubtitle};
+      }
+    }
+  }
+
+  @media (max-width: 980px) {
+    .trace-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .trace-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    padding: 16px;
+    border-radius: 22px;
+
+    .trace-header {
+      display: grid;
+    }
+
+    .trace-actions {
+      width: 100%;
+      justify-content: stretch;
+
+      button {
+        flex: 1;
+      }
+    }
+
+    .trace-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 `;
 
 export const ContentFiltro = styled.div`
