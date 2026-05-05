@@ -71,7 +71,7 @@ export const MovimientosTemplate = (): JSX.Element => {
   const { data: saldoMesAnterior = 0, isLoading: isLoadingSaldoAnterior } = useQuery<number, Error>({
     queryKey: ["saldo anterior movimientos global", usuario?.id, fechaInicio],
     queryFn: () => ObtenerSaldoUsuarioAFecha(usuario?.id ?? 0, fechaInicio),
-    enabled: !!usuario?.id,
+    enabled: !!usuario?.id && tipo.tipo === 'b',
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });

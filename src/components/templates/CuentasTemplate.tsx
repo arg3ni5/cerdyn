@@ -21,6 +21,7 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 	const [stateTipo, setStateTipo] = useState(false);
 	const { selectTipoCuenta, setTipoCuenta } = useOperaciones();
 	const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const cambiarTipo = (p: Tipo) => {
 		setTipoCuenta(p);
@@ -61,12 +62,15 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 
 	const confirmDelete = async () => {
 		if (confirmDeleteId == null) return;
+		setIsDeleting(true);
 		try {
-			await eliminarCuenta(confirmDeleteId);
+			const success = await eliminarCuenta(confirmDeleteId);
+			if (!success) throw new Error('No se pudo eliminar la cuenta');
 			showSuccessMessage('Cuenta eliminada correctamente');
 		} catch (error) {
 			showErrorMessage('Error al eliminar la cuenta');
 		} finally {
+			setIsDeleting(false);
 			setConfirmDeleteId(null);
 		}
 	};
@@ -103,6 +107,7 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 						confirmText="Sí, eliminar"
 						onConfirm={confirmDelete}
 						onCancel={() => setConfirmDeleteId(null)}
+						isLoading={isDeleting}
 					/>
 				)}
 			</AnimatePresence>

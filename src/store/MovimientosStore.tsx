@@ -101,6 +101,7 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
         rows.forEach((item) => {
           if (item.tipocategoria !== "i" && item.tipocategoria !== "g" && item.tipocategoria !== "t") return;
 
+          const isTransfer = item.tipocategoria === 't';
           response[item.tipocategoria].push({
             id: item.id,
             descripcion: item.descripcion,
@@ -111,7 +112,7 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
             cuenta: item.cuenta,
             idcategoria: null,
             categoria: item.categoria,
-            valorymoneda: String(item.monto),
+            valorymoneda: new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(item.monto),
             idcuenta_origen: item.idcuenta_origen,
             cuenta_origen: item.cuenta_origen,
             idcuenta_destino: item.idcuenta_destino,

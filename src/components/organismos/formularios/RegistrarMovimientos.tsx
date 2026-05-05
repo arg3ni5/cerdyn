@@ -471,7 +471,6 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
           confirmText={`Sí, crear ${repeticiones}`}
           variant="warning"
           onConfirm={async () => {
-            setPendingRecurrencia(null);
             try {
               if (!startSaving()) return;
               await insertarRecurrente(pendingRecurrencia);
@@ -479,9 +478,11 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
               console.error(err);
             } finally {
               stopSaving();
+              setPendingRecurrencia(null);
             }
           }}
           onCancel={() => setPendingRecurrencia(null)}
+          isLoading={isSaving}
         />
       )}
       {state && (
