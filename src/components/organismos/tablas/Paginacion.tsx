@@ -63,13 +63,37 @@ const Container = styled.div<ContainerProps>`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  .page-status {
+    min-width: 96px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 6px;
+    background: ${({ theme }) => theme.bg};
+    border: 1px solid ${({ theme }) => theme.text}18;
+    color: ${({ theme }) => theme.text};
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+
+    span {
+      color: ${({ theme }) => theme.colorSubtitle};
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+  }
 
   button {
-    background-color: ${(props) => props.$colorCategoria};
+    background-color: ${(props) => props.$colorCategoria || "#fe6156"};
     border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
+    padding: 0;
+    border-radius: 6px;
     height: 40px;
     width: 40px;
     display: flex;
@@ -77,10 +101,11 @@ const Container = styled.div<ContainerProps>`
     justify-content: center;
     cursor: pointer;
     text-align: center;
-    transition: 0.3s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 
     &:hover {
-      box-shadow: 0px 10px 15px -3px ${(props) => props.$colorCategoria};
+      box-shadow: 0px 10px 15px -3px ${(props) => props.$colorCategoria || "#fe6156"};
+      transform: translateY(-1px);
     }
     .iconoIzquierda {
       transform: rotate(-180deg);
@@ -96,8 +121,10 @@ const Container = styled.div<ContainerProps>`
   }
 
   button[disabled] {
-    background-color: #646464;
-    cursor: no-drop;
+    background-color: ${({ theme }) => theme.text}28;
+    cursor: not-allowed;
+    opacity: 0.65;
     box-shadow: none;
+    transform: none;
   }
 `;
