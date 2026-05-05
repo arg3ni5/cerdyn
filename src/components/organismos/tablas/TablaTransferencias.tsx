@@ -42,6 +42,7 @@ export const TablaTransferencias = ({
 }: TablaTransferenciasProps): JSX.Element | null => {
   const [pagina, setPagina] = useState<number>(1);
   const [pendingDelete, setPendingDelete] = useState<Movimiento | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { eliminarMovimiento } = useMovimientosStore();
   const porPagina = 10;
 
@@ -99,8 +100,13 @@ export const TablaTransferencias = ({
 
   const handleConfirmDelete = async (): Promise<void> => {
     if (!pendingDelete) return;
-    await eliminarMovimiento({ id: pendingDelete.id } as Movimiento);
-    setPendingDelete(null);
+    setIsDeleting(true);
+    try {
+      await eliminarMovimiento({ id: pendingDelete.id } as Movimiento);
+    } finally {
+      setIsDeleting(false);
+      setPendingDelete(null);
+    }
   };
 
   return (
@@ -113,6 +119,7 @@ export const TablaTransferencias = ({
             confirmText="Sí, eliminar"
             onConfirm={handleConfirmDelete}
             onCancel={() => setPendingDelete(null)}
+            isLoading={isDeleting}
           />
         )}
       </AnimatePresence>

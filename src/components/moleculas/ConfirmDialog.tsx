@@ -11,6 +11,7 @@ interface ConfirmDialogProps {
   confirmText?: string
   cancelText?: string
   variant?: 'danger' | 'warning' | 'default'
+  isLoading?: boolean
 }
 
 export function ConfirmDialog ({
@@ -21,6 +22,7 @@ export function ConfirmDialog ({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
   variant = 'danger',
+  isLoading = false,
 }: ConfirmDialogProps) {
   const accentColor =
     variant === 'danger' ? '#ef4444' : variant === 'warning' ? '#f59e0b' : '#3485eb'
@@ -58,11 +60,11 @@ export function ConfirmDialog ({
         <p>{message}</p>
 
         <Actions>
-          <CancelBtn type="button" onClick={onCancel}>
+          <CancelBtn type="button" onClick={onCancel} disabled={isLoading}>
             {cancelText}
           </CancelBtn>
-          <ConfirmBtn type="button" $color={accentColor} onClick={onConfirm}>
-            {confirmText}
+          <ConfirmBtn type="button" $color={accentColor} onClick={onConfirm} disabled={isLoading}>
+            {isLoading ? '...' : confirmText}
           </ConfirmBtn>
         </Actions>
       </Card>
@@ -147,8 +149,13 @@ const CancelBtn = styled.button`
   cursor: pointer;
   transition: background 0.15s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: rgba(156, 163, 175, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `
 
@@ -164,8 +171,13 @@ const ConfirmBtn = styled.button<ColorProps>`
   cursor: pointer;
   transition: filter 0.15s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     filter: brightness(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `
 

@@ -10,13 +10,19 @@ export function CardEliminarData() {
   const { eliminarCategoriasTodas } = useCategoriasStore();
   const { usuario } = useUsuariosStore();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleConfirm = async () => {
     const p = {
       idusuario: usuario?.id,
     };
-    await eliminarCategoriasTodas(p);
-    setConfirmOpen(false);
+    setIsResetting(true);
+    try {
+      await eliminarCategoriasTodas(p);
+    } finally {
+      setIsResetting(false);
+      setConfirmOpen(false);
+    }
   };
 
   return (
@@ -24,11 +30,12 @@ export function CardEliminarData() {
       <AnimatePresence>
         {confirmOpen && (
           <ConfirmDialog
-            title="¿Resetear todo?"
-            message="Esta acción es irreversible. Se eliminarán todos tus movimientos, categorías y se resetearán los saldos de tus cuentas."
-            confirmText="Sí, resetear"
+            title="¿Eliminar todas las categorías?"
+            message="Esta acción es irreversible. Se eliminarán todas tus categorías registradas."
+            confirmText="Sí, eliminar"
             onConfirm={handleConfirm}
             onCancel={() => setConfirmOpen(false)}
+            isLoading={isResetting}
           />
         )}
       </AnimatePresence>

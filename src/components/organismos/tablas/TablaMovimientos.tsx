@@ -38,6 +38,7 @@ export const TablaMovimientos = ({
   const [pagina, setPagina] = useState<number>(1);
   const porPagina = 10;
   const [pendingDelete, setPendingDelete] = useState<Movimiento | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { eliminarMovimiento } = useMovimientosStore();
 
   // Agrupar movimientos por fecha
@@ -73,8 +74,13 @@ export const TablaMovimientos = ({
 
   const handleConfirmDelete = async () => {
     if (!pendingDelete) return;
-    await eliminarMovimiento({ id: pendingDelete.id } as Movimiento);
-    setPendingDelete(null);
+    setIsDeleting(true);
+    try {
+      await eliminarMovimiento({ id: pendingDelete.id } as Movimiento);
+    } finally {
+      setIsDeleting(false);
+      setPendingDelete(null);
+    }
   };
 
   const editar = (data: Movimiento): void => {
@@ -115,6 +121,7 @@ export const TablaMovimientos = ({
             confirmText="Sí, eliminar"
             onConfirm={handleConfirmDelete}
             onCancel={() => setPendingDelete(null)}
+            isLoading={isDeleting}
           />
         )}
       </AnimatePresence>

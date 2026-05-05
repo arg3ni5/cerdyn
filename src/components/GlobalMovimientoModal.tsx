@@ -15,7 +15,7 @@ export default function GlobalMovimientoModal() {
     )
   ) as Tipo;
 
-  return (
+  return isOpen ? (
     <RegistrarMovimientos
       accion="Nuevo"
       dataSelect={undefined}
@@ -23,5 +23,5 @@ export default function GlobalMovimientoModal() {
       setState={closeMovimientoModal}
       tipoRegistro={tipoRegistro}
     />
-  );
+  ) : null;
 }

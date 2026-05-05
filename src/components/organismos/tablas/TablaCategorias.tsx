@@ -33,6 +33,7 @@ export const TablaCategorias = ({
   const [pagina, setPagina] = useState<number>(1);
   const [porPagina] = useState<number>(10);
   const [pendingDelete, setPendingDelete] = useState<Categoria | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { eliminarCategoria } = useCategoriasStore();
 
   if (!data || !Array.isArray(data)) {
@@ -51,10 +52,15 @@ export const TablaCategorias = ({
 
   const handleConfirmDelete = async () => {
     if (!pendingDelete) return;
-    if (pendingDelete.id && pendingDelete.idusuario) {
-      await eliminarCategoria({ id: pendingDelete.id, idusuario: pendingDelete.idusuario } as CategoriaQueryParams);
+    setIsDeleting(true);
+    try {
+      if (pendingDelete.id && pendingDelete.idusuario) {
+        await eliminarCategoria({ id: pendingDelete.id, idusuario: pendingDelete.idusuario } as CategoriaQueryParams);
+      }
+    } finally {
+      setIsDeleting(false);
+      setPendingDelete(null);
     }
-    setPendingDelete(null);
   };
 
   const editar = (data: Categoria): void => {
@@ -73,6 +79,7 @@ export const TablaCategorias = ({
             confirmText="Sí, eliminar"
             onConfirm={handleConfirmDelete}
             onCancel={() => setPendingDelete(null)}
+            isLoading={isDeleting}
           />
         )}
       </AnimatePresence>
