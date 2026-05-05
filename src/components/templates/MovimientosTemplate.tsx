@@ -7,12 +7,14 @@ import {
   Accion,
   Movimiento,
   useMovimientosStore,
+  useCuentaStore,
   RegistrarMovimientos,
   CardTotales,
   InputBuscadorLista,
   Selector,
   ListaGenerica,
   useCategoriasStore,
+  Cuenta,
   DataMovimientos,
   CalendarioLineal,
   obtenerTitulo,
@@ -63,10 +65,19 @@ export const MovimientosTemplate = (): JSX.Element => {
   } = useMovimientosStore();
 
   const { datacategoria } = useCategoriasStore();
+  const { mostrarCuentas } = useCuentaStore();
   const [stateListaCategorias, setStateListaCategorias] = useState(false);
+  const [stateListaCuentas, setStateListaCuentas] = useState(false);
+  const [filtroCuenta, setFiltroCuenta] = useState("");
 
   const [dataSelect, setDataSelect] = useState<Movimiento | undefined>(undefined);
   const fechaInicio = date.startOf("month").format("YYYY-MM-DD");
+
+  const { data: cuentas = [] } = useQuery<Cuenta[], Error>({
+    queryKey: ["cuentas movimientos", usuario?.id],
+    queryFn: async () => await mostrarCuentas({ idusuario: usuario?.id } as Cuenta) || [],
+    enabled: !!usuario?.id,
+  });
 
   const { data: saldoMesAnterior = 0, isLoading: isLoadingSaldoAnterior } = useQuery<number, Error>({
     queryKey: ["saldo anterior movimientos global", usuario?.id, fechaInicio],
@@ -80,6 +91,7 @@ export const MovimientosTemplate = (): JSX.Element => {
     setTipoMovimientos(p);
     setState(false);
     setStateListaCategorias(false);
+    setStateListaCuentas(false);
     setFiltros(filtroDescripcion, "");
   };
 
@@ -87,6 +99,7 @@ export const MovimientosTemplate = (): JSX.Element => {
     setState(false);
     setStateAccionesRegistro(false);
     setStateListaCategorias(false);
+    setStateListaCuentas(false);
   };
 
   const openUser = (): void => {
@@ -130,8 +143,9 @@ export const MovimientosTemplate = (): JSX.Element => {
     return data.filter(item => {
       const matchDescripcion = item.descripcion?.toLowerCase().includes(filtroDescripcion.toLowerCase());
       const matchMonto = item.valor?.toString().includes(filtroDescripcion);
+      const matchCuenta = filtroCuenta === "" || item.cuenta === filtroCuenta || item.cuenta_origen === filtroCuenta || item.cuenta_destino === filtroCuenta;
       const matchCategoria = filtroCategoria === "" || item.categoria === filtroCategoria;
-      return (matchDescripcion || matchMonto) && matchCategoria;
+      return (matchDescripcion || matchMonto) && matchCuenta && matchCategoria;
     });
   };
 
@@ -267,6 +281,44 @@ export const MovimientosTemplate = (): JSX.Element => {
               />
             </FilterSearch>
 
+            <CategoryFilter>
+              <ContentFiltro>
+                <Selector
+                  color="#9955ff"
+                  texto1="Cuenta: "
+                  texto2={filtroCuenta || "Todas"}
+                  funcion={() => {
+                    setStateListaCuentas(!stateListaCuentas);
+                    setStateListaCategorias(false);
+                  }}
+                  state={stateListaCuentas}
+                />
+                {stateListaCuentas && (
+                  <div className="filter-list">
+                    <ListaGenerica
+                      placement="down"
+                      mobilePlacement="down"
+                      scroll="auto"
+                      filterable
+                      filterPlaceholder="Buscar cuenta..."
+                      emptyMessage="No hay cuentas que coincidan."
+                      filterBy={["descripcion"]}
+                      minItemsToFilter={4}
+                      data={[
+                        { icono: "", descripcion: "Todas" },
+                        ...cuentas.map(cuenta => ({
+                          icono: cuenta.icono || "",
+                          descripcion: cuenta.descripcion || "",
+                        }))
+                      ]}
+                      setState={() => setStateListaCuentas(false)}
+                      funcion={(item) => setFiltroCuenta(item.descripcion === "Todas" ? "" : item.descripcion)}
+                    />
+                  </div>
+                )}
+              </ContentFiltro>
+            </CategoryFilter>
+
             {mostrarFiltroCategoria && (
               <CategoryFilter>
                 <ContentFiltro>
@@ -274,18 +326,26 @@ export const MovimientosTemplate = (): JSX.Element => {
                     color={tipo.color}
                     texto1="Categoría: "
                     texto2={filtroCategoria || "Todas"}
-                    funcion={() => setStateListaCategorias(!stateListaCategorias)}
+                    funcion={() => {
+                      setStateListaCategorias(!stateListaCategorias);
+                      setStateListaCuentas(false);
+                    }}
                     state={stateListaCategorias}
                   />
                   {stateListaCategorias && (
-                    <ListaGenerica
-                      data={[
-                        { icono: "📁", descripcion: "Todas" },
-                        ...(datacategoria?.map(c => ({ icono: c.icono, descripcion: c.descripcion })) || [])
-                      ]}
-                      setState={() => setStateListaCategorias(false)}
-                      funcion={(item) => setFiltros(filtroDescripcion, item.descripcion === "Todas" ? "" : item.descripcion)}
-                    />
+                    <div className="filter-list">
+                      <ListaGenerica
+                        placement="down"
+                        mobilePlacement="down"
+                        scroll="auto"
+                        data={[
+                          { icono: "📁", descripcion: "Todas" },
+                          ...(datacategoria?.map(c => ({ icono: c.icono, descripcion: c.descripcion })) || [])
+                        ]}
+                        setState={() => setStateListaCategorias(false)}
+                        funcion={(item) => setFiltros(filtroDescripcion, item.descripcion === "Todas" ? "" : item.descripcion)}
+                      />
+                    </div>
                   )}
                 </ContentFiltro>
               </CategoryFilter>
