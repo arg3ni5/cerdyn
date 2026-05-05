@@ -116,7 +116,7 @@ export const TablaCategorias = ({
             })}
         </tbody>
       </table>
-      <Paginacion pagina={pagina} setPagina={setPagina} maximo={maximo} />
+      {maximo > 1 && <Paginacion pagina={pagina} setPagina={setPagina} maximo={maximo} />}
     </Container>
   );
 }
