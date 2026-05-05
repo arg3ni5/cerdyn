@@ -136,6 +136,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     formState: { errors },
     handleSubmit,
     watch,
+    reset,
   } = useForm<FormInputs>(
     {
       defaultValues: {
@@ -148,6 +149,19 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
       },
     }
   );
+
+  useEffect(() => {
+    if (!state) return;
+
+    reset({
+      monto: Number(dataSelect?.valor || 0),
+      descripcion: dataSelect?.descripcion || "",
+      fecha: dataSelect?.fecha || fechaactual.toISOString().slice(0, 10),
+      intervaloDias: 30,
+      diaMes: 1,
+      repeticiones: 3,
+    });
+  }, [state, accion, dataSelect?.id, dataSelect?.valor, dataSelect?.descripcion, dataSelect?.fecha, reset]);
 
   const fechaActualForm = watch('fecha');
   const intervaloDiasForm = watch('intervaloDias');
