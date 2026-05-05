@@ -31,6 +31,7 @@ interface ContainerProps {
   $mobileBottom?: string;
   $mobileTop?: string;
   $mobileFlipUp?: boolean;
+  $hasFilter?: boolean;
 }
 
 export const ListaGenerica = ({
@@ -90,14 +91,15 @@ export const ListaGenerica = ({
       $mobileBottom={mobileBottomPosition}
       $mobileTop={mobileTopPosition}
       $mobileFlipUp={mobileFlipUp}
+      $hasFilter={showFilter}
     >
       {btnClose && (
-        <section className="contentClose">
+        <div className="contentClose">
           <BtnCerrar funcion={setState} />
-        </section>
+        </div>
       )}
       {showFilter && (
-        <section className="contentFilter">
+        <div className="contentFilter">
           <input
             type="text"
             value={search}
@@ -105,17 +107,17 @@ export const ListaGenerica = ({
             onChange={(e) => setSearch(e.target.value)}
             onClick={(e) => e.stopPropagation()}
           />
-        </section>
+        </div>
       )}
-      <section className="contentItems">
+      <div className="contentItems">
         {filteredData.map((item, index) => (
-          <ItemContainer key={index} onClick={() => seleccionar(item)}>
+          <ItemContainer key={index} $compact={showFilter} onClick={() => seleccionar(item)}>
             <span>{item.icono}</span>
             <span>{item.descripcion}</span>
           </ItemContainer>
         ))}
         {filteredData.length === 0 && <EmptyState>{emptyMessage}</EmptyState>}
-      </section>
+      </div>
     </Container>
   );
 };
@@ -127,12 +129,12 @@ const Container = styled.div<ContainerProps>`
   color: ${({ theme }) => theme.text};
   position: absolute;
   top: ${(props) => props.$top};
-  margin-bottom: 15px;
+  margin-bottom: ${({ $hasFilter }) => $hasFilter ? "6px" : "15px"};
   bottom: ${(props) => props.$bottom};
   width: 100%;
-  padding: 10px;
+  padding: ${({ $hasFilter }) => $hasFilter ? "6px" : "10px"};
   border-radius: 10px;
-  gap: 10px;
+  gap: ${({ $hasFilter }) => $hasFilter ? "6px" : "10px"};
   z-index: 260;
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.text}14;
@@ -171,28 +173,35 @@ const Container = styled.div<ContainerProps>`
     margin: 0;
   }
 
-  .contentFilter {
+  && .contentFilter {
     display: grid;
+    padding: 0;
+    margin: 0;
+    gap: 0;
   }
 
-  .contentFilter input {
+  && .contentFilter input {
     width: 100%;
     border: 1px solid ${({ theme }) => theme.text}20;
     background: ${({ theme }) => theme.bgAlpha};
     color: ${({ theme }) => theme.text};
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .contentFilter input:focus {
+  && .contentFilter input:focus {
     border-color: ${({ theme }) => theme.primary};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.primary}20;
   }
 
-  .contentItems {
-    padding-top: 0;
+  && .contentItems {
+    display: flex;
+    flex-direction: column;
+    gap: ${({ $hasFilter }) => $hasFilter ? "2px" : "0"};
+    padding: 0;
+    margin: 0;
     max-height: min(260px, 45vh);
     overflow-y: ${(props) => props.scroll || "auto"};
     overflow-x: hidden;
@@ -201,31 +210,38 @@ const Container = styled.div<ContainerProps>`
     scrollbar-color: rgba(225, 78, 25, 0.5) rgba(20, 27, 38, 0.06);
   }
 
-  .contentItems::-webkit-scrollbar {
+  && .contentItems::-webkit-scrollbar {
     width: 8px;
   }
 
-  .contentItems::-webkit-scrollbar-track {
+  && .contentItems::-webkit-scrollbar-track {
     background: rgba(20, 27, 38, 0.06);
     border-radius: 999px;
   }
 
-  .contentItems::-webkit-scrollbar-thumb {
+  && .contentItems::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, rgba(255, 145, 87, 0.92), rgba(225, 78, 25, 0.88));
     border-radius: 999px;
   }
 
-  .contentItems::-webkit-scrollbar-thumb:hover {
+  && .contentItems::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, rgba(255, 157, 108, 1), rgba(225, 78, 25, 1));
   }
 `;
-const ItemContainer = styled.div`
-  gap: 10px;
+const ItemContainer = styled.div<{ $compact?: boolean }>`
+  gap: ${({ $compact }) => $compact ? "6px" : "10px"};
   display: flex;
-  padding: 10px;
-  border-radius: 10px;
+  align-items: center;
+  padding: ${({ $compact }) => $compact ? "6px 8px" : "10px"};
+  border-radius: ${({ $compact }) => $compact ? "8px" : "10px"};
   cursor: pointer;
-  transition: 0.3s;
+  line-height: 1.15;
+  transition: 0.2s;
+
+  span:first-child {
+    flex: 0 0 auto;
+    line-height: 1;
+  }
 
   &:hover {
     background-color: ${({ theme }) => theme.bgtotal};
