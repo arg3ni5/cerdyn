@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cuenta, Movimiento, useUsuariosStore, ObtenerSaldoCuentaAFecha, RegistrarMovimientos } from "../../index";
+import { Cuenta, Movimiento, useUsuariosStore, ObtenerSaldoCuentaAFecha, RegistrarMovimientos, Spinner } from "../../index";
 import { supabase } from "../../supabase/supabase.config";
 import dayjs from "dayjs";
 import styled from "styled-components";
@@ -26,6 +26,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
+	position: relative;
 	background: ${({ theme }) => theme.bg};
 	color: ${({ theme }) => theme.text};
 	border-radius: 12px;
@@ -53,7 +54,7 @@ const ModalContent = styled.div`
 			gap: 0.5rem;
 		}
 
-		button {
+					button {
 			background: none;
 			border: none;
 			font-size: 1.5rem;
@@ -63,6 +64,11 @@ const ModalContent = styled.div`
 
 			&:hover {
 				opacity: 0.7;
+			}
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.45;
 			}
 		}
 	}
@@ -153,6 +159,12 @@ const ModalContent = styled.div`
 						border-color: #667df4;
 						color: #667df4;
 					}
+
+					&:disabled {
+						cursor: not-allowed;
+						opacity: 0.5;
+						transform: none;
+					}
 				}
 
 				.item-valor {
@@ -242,7 +254,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const fechaFin = date.endOf("month").format("YYYY-MM-DD");
 
 	// Obtener movimientos del mes (incluyendo transferencias)
-	const { data: movimientos, isLoading: isLoadingMovs } = useQuery<Movimiento[], Error>({
+	const { data: movimientos, isLoading: isLoadingMovs, isFetching: isFetchingMovs } = useQuery<Movimiento[], Error>({
 		queryKey: ["movimientos-cuenta", cuenta.id, fechaInicio, fechaFin],
 		queryFn: async () => {
 			try {
@@ -269,7 +281,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 		enabled: !!cuenta.id,
 	});
 
-	const { data: saldoAnterior, isLoading: isLoadingSaldo } = useQuery({
+	const { data: saldoAnterior, isLoading: isLoadingSaldo, isFetching: isFetchingSaldo } = useQuery({
 		queryKey: ["saldo-anterior", cuenta.id, fechaInicio],
 		queryFn: () => ObtenerSaldoCuentaAFecha(cuenta.id, fechaInicio),
 		enabled: !!cuenta.id,
@@ -321,6 +333,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 
 	const saldoInicial = saldoAnterior || 0;
 	const saldoFinal = saldoInicial + totalIngresos - totalGastos + totalTransferenciasEntrantes - totalTransferenciasSalientes;
+	const isModalLoading = isLoadingMovs || isFetchingMovs || isLoadingSaldo || isFetchingSaldo;
 
 	return (
 		<ModalOverlay onClick={handleClose}>
@@ -331,12 +344,14 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 				setState={cerrarRegistro}
 			/>
 			<ModalContent onClick={(e) => e.stopPropagation()}>
+				{isModalLoading && <Spinner label="Cargando detalle..." />}
+
 				<div className="modal-header">
 					<h2>
 						<span>{cuenta.icono}</span>
 						{cuenta.descripcion}
 					</h2>
-					<button onClick={onClose}>✕</button>
+					<button onClick={onClose} disabled={isModalLoading}>✕</button>
 				</div>
 
 				<div className="modal-body">
@@ -348,6 +363,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 								onPrev={handlePrevMonth}
 								onNext={handleNextMonth}
 								onToday={handleSetToday}
+								disabled={isModalLoading}
 							/>
 						</div>
 					</div>
@@ -425,6 +441,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 													type="button"
 													className="edit-button"
 													onClick={() => editarMovimiento(movimiento)}
+													disabled={isModalLoading}
 													aria-label={`Editar movimiento ${movimiento.descripcion || "sin descripción"}`}
 													title="Editar movimiento"
 												>
@@ -451,16 +468,39 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 // Componente CalendarioLinealCustom para reutilizar el estilo de CalendarioLineal pero con props controladas
 import { MdOutlineNavigateNext, MdArrowBackIos } from "react-icons/md";
 import { ConvertirCapitalize } from "../../index";
-const CalendarioLinealCustom = ({ date, onPrev, onNext, onToday }: { date: any, onPrev: () => void, onNext: () => void, onToday: () => void }) => (
+const CalendarButton = styled.button`
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	padding: 0;
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.45;
+	}
+`;
+
+const CalendarCurrentButton = styled(CalendarButton)`
+	border: 2px solid #667df4;
+	border-radius: 30px;
+	padding: 10px;
+	font-weight: 500;
+`;
+
+const CalendarioLinealCustom = ({ date, onPrev, onNext, onToday, disabled }: { date: any, onPrev: () => void, onNext: () => void, onToday: () => void, disabled?: boolean }) => (
 	<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-		<span onClick={onPrev} style={{ cursor: 'pointer', marginLeft: 20 }}>
+		<CalendarButton type="button" onClick={onPrev} disabled={disabled} style={{ marginLeft: 20 }} aria-label="Mes anterior">
 			<MdArrowBackIos size={30} />
-		</span>
-		<section style={{ border: '2px solid #667df4', borderRadius: 30, textAlign: 'center', display: 'flex', alignItems: 'center', padding: 10 }}>
-			<p onClick={onToday} style={{ margin: 0, cursor: 'pointer', fontWeight: 500 }}>{ConvertirCapitalize(date.format('MMMM YYYY'))}</p>
-		</section>
-		<span onClick={onNext} style={{ cursor: 'pointer', marginRight: 20 }}>
+		</CalendarButton>
+		<CalendarCurrentButton type="button" onClick={onToday} disabled={disabled}>
+			{ConvertirCapitalize(date.format('MMMM YYYY'))}
+		</CalendarCurrentButton>
+		<CalendarButton type="button" onClick={onNext} disabled={disabled} style={{ marginRight: 20 }} aria-label="Mes siguiente">
 			<MdOutlineNavigateNext size={45} />
-		</span>
+		</CalendarButton>
 	</div>
 );
