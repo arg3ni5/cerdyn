@@ -1,3 +1,4 @@
+import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import {
   applyCategoryCorrection,
@@ -5,6 +6,7 @@ import {
   groupCategoryIssues,
   normalizeTipo,
   ParsedMovimientoRow,
+  parseMovimientosWorkbook,
   validateImportRows,
 } from '../utils/import/movimientosExcelImport';
 
@@ -13,6 +15,22 @@ describe('normalizeTipo', () => {
     expect(normalizeTipo('ingreso')).toMatchObject({ kind: 'valid', value: 'i' });
     expect(normalizeTipo('g')).toMatchObject({ kind: 'valid', value: 'g' });
     expect(normalizeTipo('transferencia')).toMatchObject({ kind: 'valid', value: 't' });
+  });
+});
+
+describe('parseMovimientosWorkbook', () => {
+  it('parses localized number strings from Excel rows', async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Movimientos');
+    worksheet.addRow(['fecha', 'descripcion', 'tipo', 'valor', 'idcategoria', 'idcuenta', 'idcuenta_origen', 'idcuenta_destino']);
+    worksheet.addRow(['2026-01-10', 'Compra con separadores', 'gasto', '$ 1.234,56', 1, 100, '', '']);
+    worksheet.addRow(['2026-01-11', 'Ingreso con formato US', 'ingreso', '2,345.67', 2, 100, '', '']);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const rows = await parseMovimientosWorkbook(buffer as ArrayBuffer);
+
+    expect(rows[0].valor).toBe(1234.56);
+    expect(rows[1].valor).toBe(2345.67);
   });
 });
 

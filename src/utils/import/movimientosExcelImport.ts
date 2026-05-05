@@ -96,11 +96,35 @@ const asDateYyyyMmDd = (value: unknown): string => {
   return text;
 };
 
+const normalizeNumberText = (value: string): string => {
+  const compactValue = value.trim().replace(/\s/g, '').replace(/[^\d,.-]/g, '');
+  const lastComma = compactValue.lastIndexOf(',');
+  const lastDot = compactValue.lastIndexOf('.');
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimalSeparator = lastComma > lastDot ? ',' : '.';
+    const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
+    return compactValue
+      .replace(new RegExp(`\\${thousandsSeparator}`, 'g'), '')
+      .replace(decimalSeparator, '.');
+  }
+
+  if (lastComma >= 0) {
+    return compactValue.replace(/\./g, '').replace(',', '.');
+  }
+
+  const dotMatches = compactValue.match(/\./g);
+  if (dotMatches && dotMatches.length > 1) {
+    return compactValue.replace(/\./g, '');
+  }
+
+  return compactValue;
+};
+
 const asNumber = (value: unknown): number | null => {
   if (value == null || value === '') return null;
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  const sanitized = String(value).replace(/\s/g, '').replace(',', '.');
-  const parsed = Number(sanitized);
+  const parsed = Number(normalizeNumberText(String(value)));
   return Number.isFinite(parsed) ? parsed : null;
 };
 
@@ -402,12 +426,12 @@ export const chunkRows = <T,>(rows: T[], size: number): T[][] => {
 export interface TemplateCategory {
   id: number;
   tipo: string | null;
-  descripcion: string | null;
+  descripcion?: string | null;
 }
 
 export interface TemplateCuenta {
   id: number;
-  descripcion: string | null;
+  descripcion?: string | null;
 }
 
 export const downloadMovimientosImportTemplate = async (categories: TemplateCategory[], cuentas: TemplateCuenta[]): Promise<void> => {
@@ -443,7 +467,7 @@ export const downloadMovimientosImportTemplate = async (categories: TemplateCate
   categoriasSheet.addRow(['tipo', 'idcategoria', 'descripcion']);
   categories.forEach((item) => {
     const tipo = normalizeTipo(item.tipo).value;
-    if (!tipo) return;
+    if (tipo !== 'i' && tipo !== 'g') return;
     categoriasSheet.addRow([
       tipo === 'i' ? 'ingreso' : 'gasto',
       item.id,

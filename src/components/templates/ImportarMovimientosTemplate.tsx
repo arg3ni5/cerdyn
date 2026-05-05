@@ -2,6 +2,7 @@ import { ChangeEvent, JSX, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRightLeft, CheckCircle2, Download, FileSpreadsheet, Upload, Wrench } from 'lucide-react';
 import { Header } from '../organismos/Header';
 import { supabase } from '../../supabase/supabase.config';
+import type { Database } from '../../types/supabase';
 import { showErrorMessage, showSuccessMessage } from '../../utils/messages';
 import { downloadJson } from '../../utils/export/downloadUtils';
 import {
@@ -13,6 +14,7 @@ import {
   downloadMovimientosImportTemplate,
   groupCategoryIssues,
   ParsedMovimientoRow,
+  normalizeTipo,
   parseMovimientosWorkbook,
   validateImportRows,
 } from '../../utils/import/movimientosExcelImport';
@@ -45,6 +47,7 @@ type Step = 1 | 2 | 3;
 
 const PREVIEW_LIMIT = 20;
 const INSERT_CHUNK_SIZE = 200;
+type MovimientoImportPayload = Database['public']['Tables']['movimientos']['Insert'];
 
 export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: ImportarMovimientosTemplateProps): JSX.Element => {
   const [step, setStep] = useState<Step>(1);
@@ -67,8 +70,9 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
     const result: Record<'i' | 'g', CategoriaImportRef[]> = { i: [], g: [] };
     categorias.forEach((item) => {
       if (item.idusuario !== userId) return;
-      if (item.tipo === 'i' || item.tipo === 'ingreso') result.i.push(item);
-      if (item.tipo === 'g' || item.tipo === 'gasto') result.g.push(item);
+      const tipo = normalizeTipo(item.tipo).value;
+      if (tipo === 'i') result.i.push(item);
+      if (tipo === 'g') result.g.push(item);
     });
     return result;
   }, [categorias, userId]);
@@ -113,7 +117,12 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
       return;
     }
 
-    const payload = validation.rows.map((row) => (
+    if (validation.rows.length === 0) {
+      showErrorMessage('No hay filas válidas para importar.');
+      return;
+    }
+
+    const payload: MovimientoImportPayload[] = validation.rows.map((row) => (
       row.tipo === 't'
         ? {
             fecha: row.fecha,
@@ -147,18 +156,20 @@ export const ImportarMovimientosTemplate = ({ userId, categorias, cuentas }: Imp
     setIsImporting(true);
 
     for (const chunk of chunks) {
-      const { error } = await supabase.from('movimientos').insert(chunk as never);
+      const { error } = await supabase.from('movimientos').insert(chunk);
       if (error) {
-        setIsImporting(false);
         setProgress({ done: inserted, total: payload.length, failed: chunk.length });
         showErrorMessage(`Error al importar: ${error.message}`);
-        return;
+        break;
       }
       inserted += chunk.length;
       setProgress({ done: inserted, total: payload.length, failed: 0 });
     }
 
     setIsImporting(false);
+
+    if (inserted !== payload.length) return;
+
     showSuccessMessage(`Importación completada. Se insertaron ${inserted} movimientos.`);
     setRows([]);
     setSelectedFixes({});
