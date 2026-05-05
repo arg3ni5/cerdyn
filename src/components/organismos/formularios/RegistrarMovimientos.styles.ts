@@ -130,6 +130,11 @@ export const CloseButton = styled.button`
     background-color: rgba(225, 78, 25, 0.05);
   }
 
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
   @media (min-width: 640px) {
     top: 40px;
     right: 40px;

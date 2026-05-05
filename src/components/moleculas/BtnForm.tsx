@@ -10,6 +10,7 @@ interface BtnFormProps {
   icono?: React.ReactNode;
   url?: string;
   type?: "button" | "submit" | "reset";
+  disabled?: boolean;
 }
 
 export const BtnForm: React.FC<BtnFormProps> = ({
@@ -19,7 +20,8 @@ export const BtnForm: React.FC<BtnFormProps> = ({
   bgcolor,
   icono,
   url,
-  type = "button"
+  type = "button",
+  disabled = false,
 }) => {
   const navigate = useNavigate();
 
@@ -36,7 +38,7 @@ export const BtnForm: React.FC<BtnFormProps> = ({
   };
 
   return (
-    <Container type={type} $bgcolor={bgcolor} onClick={handleClick}>
+    <Container type={type} $bgcolor={bgcolor} onClick={handleClick} disabled={disabled}>
       <div className={className || "btn"}><span className="icon">{icono}</span> <span>{titulo}</span></div>
     </Container>
   );
@@ -83,19 +85,38 @@ const Container = styled.button<StyledButtonProps>`
       color: #000;
     }
 
-    &:hover {
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &:not(:disabled) .btn:hover {
       transform: translate(-0.05em, -0.05em);
       box-shadow: 0.15em 0.15em #000;
       filter: brightness(1.03);
-    }
+  }
 
-    &:active {
+  &:not(:disabled) .btn:active {
       transform: translate(0.05em, 0.05em);
       box-shadow: 0.05em 0.05em #000;
-    }
   }
 
   &:focus-visible .btn {
     box-shadow: 0 0 0 4px rgba(52, 131, 235, 0.25), 0.1em 0.1em #000;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  &:disabled .btn {
+    opacity: 0.72;
+    filter: grayscale(0.15);
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;

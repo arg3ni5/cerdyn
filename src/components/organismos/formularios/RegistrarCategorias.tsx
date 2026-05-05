@@ -114,16 +114,21 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
         aria-modal="true"
         aria-label="Formulario de categoría"
       >
-        {estadoProceso && <Spinner />}
+        <div className="sub-contenedor" aria-busy={estadoProceso}>
+          {estadoProceso && <Spinner />}
 
-        <div className="sub-contenedor">
           <div className="encabezado">
             <h1>
               {accion === "Editar" ? "Editar categoría" : "Nueva categoría"}
             </h1>
           </div>
 
-          <CloseButton type="button" onClick={onClose} aria-label="Cerrar formulario de categoría">
+          <CloseButton
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar formulario de categoría"
+            disabled={estadoProceso}
+          >
             <X size={18} />
           </CloseButton>
 
@@ -154,6 +159,7 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
                   type="button"
                   onClick={() => setShowPicker(!showPicker)}
                   aria-label="Seleccionar ícono"
+                  disabled={estadoProceso}
                 >
                   <span>{emojiselect}</span>
                   <span className="hint">Toca para cambiar</span>
@@ -175,6 +181,7 @@ export const RegistrarCategorias = ({ onClose, dataSelect, accion }: RegistrarCa
                   icono={<v.iconoguardar />}
                   titulo="Guardar"
                   bgcolor="linear-gradient(135deg, #ffd667 0%, #ff9558 100%)"
+                  disabled={estadoProceso}
                 />
               </StickyFooter>
             </ContenedorBotones>

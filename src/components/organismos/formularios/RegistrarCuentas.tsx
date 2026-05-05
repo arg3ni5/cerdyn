@@ -105,16 +105,21 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
         aria-modal="true"
         aria-label="Formulario de cuenta"
       >
-        {estadoProceso && <Spinner />}
+        <div className="sub-contenedor" aria-busy={estadoProceso}>
+          {estadoProceso && <Spinner />}
 
-        <div className="sub-contenedor">
           <div className="encabezado">
             <h1>
               {accion === "Editar" ? "Editar cuenta" : "Nueva cuenta"}
             </h1>
           </div>
 
-          <CloseButton type="button" onClick={onClose} aria-label="Cerrar formulario de cuenta">
+          <CloseButton
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar formulario de cuenta"
+            disabled={estadoProceso}
+          >
             <X size={18} />
           </CloseButton>
 
@@ -148,6 +153,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
                   type="button"
                   onClick={() => setShowPicker(!showPicker)}
                   aria-label="Seleccionar ícono"
+                  disabled={estadoProceso}
                 >
                   <span>{emojiselect}</span>
                   <span className="hint">Toca para cambiar</span>
@@ -169,6 +175,7 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
                   icono={<v.iconoguardar />}
                   titulo="Guardar"
                   bgcolor="linear-gradient(135deg, #ffd667 0%, #ff9558 100%)"
+                  disabled={estadoProceso}
                 />
               </StickyFooter>
             </ContenedorBotones>

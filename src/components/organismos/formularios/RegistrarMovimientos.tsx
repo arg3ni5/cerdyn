@@ -1,8 +1,8 @@
-import { JSX, useEffect, useState } from "react";
+import { JSX, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Switch } from "@mui/material";
 import { motion, AnimatePresence } from "motion/react";
-import { CircleCheck, X } from "lucide-react";
+import { CircleCheck, Loader2, X } from "lucide-react";
 import {
   useMovimientosStore,
   useCategoriasStore,
@@ -95,6 +95,8 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   const [previewFechas, setPreviewFechas] = useState<string[]>([]);
   const [recurrenciaColapsada, setRecurrenciaColapsada] = useState<boolean>(false);
   const [pendingRecurrencia, setPendingRecurrencia] = useState<MovimientoInsert | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const savingRef = useRef<boolean>(false);
 
   const opcionesModoRecurrencia = [
     { icono: "", descripcion: "Cada N días", value: "intervalo" as const },
@@ -113,6 +115,18 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   const fechaactual = new Date();
 
   const esTransferencia = tipoMovimiento?.tipo === "t";
+
+  const startSaving = (): boolean => {
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setIsSaving(true);
+    return true;
+  };
+
+  const stopSaving = (): void => {
+    savingRef.current = false;
+    setIsSaving(false);
+  };
 
   useEffect(() => {
     const tipo = dataSelect?.tipo || (accion === "Nuevo" ? tipoRegistro?.tipo : undefined) || (accion === "Nuevo" && selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
@@ -205,6 +219,8 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   };
 
   const insertar = async (formData: FormInputs): Promise<void> => {
+    if (savingRef.current) return;
+
     if (esTransferencia) {
       if (cuentaOrigen == null) {
         showErrorMessage("Seleccione la cuenta origen");
@@ -256,14 +272,17 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
           setPendingRecurrencia(baseData);
           return;
         }
+        if (!startSaving()) return;
         await insertarRecurrente(baseData);
       } else {
-        console.log(baseData);
+        if (!startSaving()) return;
         await insertarMovimientos(baseData);
         setState();
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      stopSaving();
     }
   };
 
@@ -285,6 +304,8 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   };
 
   const actualizar = async (formData: FormInputs): Promise<void> => {
+    if (savingRef.current) return;
+
     if (esTransferencia) {
       if (cuentaOrigen == null) {
         showErrorMessage("Seleccione la cuenta origen");
@@ -332,13 +353,14 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
           valor: parseFloat(formData.monto.toString()),
         };
     try {
-      console.log('actualizar', baseData);
-
+      if (!startSaving()) return;
       await actualizarMovimientos(baseData);
       setState();
     }
     catch (err) {
       console.error(err);
+    } finally {
+      stopSaving();
     }
   }
 
@@ -451,9 +473,12 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
           onConfirm={async () => {
             setPendingRecurrencia(null);
             try {
+              if (!startSaving()) return;
               await insertarRecurrente(pendingRecurrencia);
             } catch (err) {
               console.error(err);
+            } finally {
+              stopSaving();
             }
           }}
           onCancel={() => setPendingRecurrencia(null)}
@@ -501,7 +526,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                   )}
                 </ContenedorDropdown>
               </div>
-              <CloseButton onClick={setState} type="button">
+              <CloseButton onClick={setState} type="button" disabled={isSaving}>
                 <X size={24} />
               </CloseButton>
             </div>
@@ -836,9 +861,10 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                 <StickyFooter>
                   <BtnForm
                     type="submit"
-                    titulo="Guardar"
+                    titulo={isSaving ? "Guardando..." : "Guardar"}
                     bgcolor="#DAC1FF"
-                    icono={<v.iconoguardar />}
+                    icono={isSaving ? <Loader2 className="spin" size={20} /> : <v.iconoguardar />}
+                    disabled={isSaving}
                   />
                   <BtnForm
                     funcion={setState}
@@ -846,6 +872,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                     titulo="Cancelar"
                     bgcolor="#ff4d4f"
                     icono={<v.iconocerrar />}
+                    disabled={isSaving}
                   />
                 </StickyFooter>
               </ContenedorBotones>
