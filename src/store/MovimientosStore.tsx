@@ -43,6 +43,9 @@ export interface DataMovimientos {
   g: MovimientosMesAnio;
   t: MovimientosMesAnio;
 }
+export type MovimientosConsultaParams = MovimientosMesAnioParams & {
+  p_idcuenta?: number | null;
+};
 interface MovimientosState {
   datamovimientos: DataMovimientos;
   rptParams: RptMovimientosMesAnioParams;
@@ -54,9 +57,9 @@ interface MovimientosState {
   gastosPagadosMes: number;
   filtroDescripcion: string;
   filtroCategoria: string;
-  parametros: MovimientosMesAnioParams;
+  parametros: MovimientosConsultaParams;
   setFiltros: (descripcion: string, categoria: string) => void;
-  mostrarMovimientos: (p: MovimientosMesAnioParams) => Promise<DataMovimientos>;
+  mostrarMovimientos: (p: MovimientosConsultaParams) => Promise<DataMovimientos>;
   setDatamovimientos: (data: DataMovimientos) => void;
   calcularTotales: (data: DataMovimientos) => void;
   insertarMovimientos: (p: MovimientoInsert) => Promise<void>;
@@ -79,29 +82,30 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
   gastosPagadosMes: 0,
   filtroDescripcion: "",
   filtroCategoria: "",
-  parametros: {} as MovimientosMesAnioParams,
+  parametros: {} as MovimientosConsultaParams,
 
   setFiltros: (descripcion: string, categoria: string) => {
     set({ filtroDescripcion: descripcion, filtroCategoria: categoria });
   },
 
-  mostrarMovimientos: async (p: MovimientosMesAnioParams) => {
+  mostrarMovimientos: async (p: MovimientosConsultaParams) => {
     try {
       set({ parametros: p });
 
-      if (p.tipocategoria === "b") {
+      if (p.tipocategoria === "b" || p.p_idcuenta != null) {
         const rows = await MostrarMovimientosPorMesAñoAll({
           anio: p.anio,
           mes: p.mes,
           iduser: p.iduser,
+          p_idcuenta: p.p_idcuenta,
         }) || [];
 
         const response: DataMovimientos = { i: [], g: [], t: [] };
 
         rows.forEach((item) => {
           if (item.tipocategoria !== "i" && item.tipocategoria !== "g" && item.tipocategoria !== "t") return;
+          if (p.tipocategoria !== "b" && item.tipocategoria !== p.tipocategoria) return;
 
-          const isTransfer = item.tipocategoria === 't';
           response[item.tipocategoria].push({
             id: item.id,
             descripcion: item.descripcion,
