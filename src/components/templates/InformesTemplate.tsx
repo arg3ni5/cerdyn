@@ -1,12 +1,15 @@
 import styled from "styled-components";
-import { CalendarioLineal, Header, Tabs, ContentFiltros, Btndesplegable, ListaMenuDesplegable, DataDesplegableMovimientos, useOperaciones, Tipo, useUsuariosStore, v, DataMovimientos, MovimientosMesAnioAll, useMovimientosStore } from "../../index";
-import { JSX, useState } from "react";
+import { CalendarioLineal, Header, Tabs, ContentFiltros, Btndesplegable, ListaMenuDesplegable, DataDesplegableMovimientos, useOperaciones, Tipo, useUsuariosStore, v, DataMovimientos, MovimientosMesAnioAll, useMovimientosStore, SpinnerLoader } from "../../index";
+import { JSX, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { downloadJson } from "../../utils/export/downloadUtils";
 import { exportToExcel } from "../../utils/export/excelExport";
 import { exportToPdf } from "../../utils/export/pdfExport";
 import { logger } from "../../utils/logger";
 import { showErrorMessage } from "../../utils/sweetAlertUtils";
+
+const MIN_LOADING_TIME_MS = 500;
+
 export const InformesTemplate = (): JSX.Element => {
   const {
     setTipoMovimientos,
@@ -18,6 +21,7 @@ export const InformesTemplate = (): JSX.Element => {
   const [stateTipo, setStateTipo] = useState<boolean>(false);
   const [state, setState] = useState<boolean>(false);
   const [exporting, setExporting] = useState<'json' | 'excel' | 'pdf' | null>(null);
+  const [showMinimumLoading, setShowMinimumLoading] = useState<boolean>(true);
   const openTipo = (): void => {
     setStateTipo(!stateTipo);
     setState(false);
@@ -38,11 +42,20 @@ export const InformesTemplate = (): JSX.Element => {
     tipocategoria: tipo.tipo,
   });
 
-  const { isLoading: isLoadingMovimientos } = useQuery<DataMovimientos, Error>({
+  const { isLoading: isLoadingMovimientos, error: errorMovimientos } = useQuery<DataMovimientos, Error>({
     queryKey: ['movimientos informes', tipo.tipo, idusuario, date.format('YYYY-MM')],
     queryFn: () => mostrarMovimientos(getParams()),
     enabled: !!idusuario && !!tipo?.tipo,
   });
+
+  useEffect(() => {
+    setShowMinimumLoading(true);
+    const timeoutId = window.setTimeout(() => {
+      setShowMinimumLoading(false);
+    }, MIN_LOADING_TIME_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [tipo.tipo, idusuario, date]);
 
   const getCuentaExport = (tipoMovimiento: 'i' | 'g' | 't', item: DataMovimientos['i'][number]): string => {
     if (tipoMovimiento === 't') {
@@ -128,6 +141,21 @@ export const InformesTemplate = (): JSX.Element => {
   };
 
   const exportDisabled = exporting !== null || isLoadingMovimientos || !idusuario;
+
+  if (showMinimumLoading || isLoadingMovimientos || !idusuario) {
+    return <SpinnerLoader />;
+  }
+
+  if (errorMovimientos) {
+    logger.error('Error al cargar movimientos en Informes', { error: errorMovimientos });
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h2>Error al cargar los informes</h2>
+        <p>{errorMovimientos.message}</p>
+        <p style={{ fontSize: '14px', color: '#666' }}>Por favor, recarga la página o intenta más tarde</p>
+      </div>
+    );
+  }
 
   return (
     <Container>
