@@ -19,8 +19,11 @@ import {
   TablaMovimientos,
   TablaTransferencias,
   TipoMovimiento,
+  useUsuariosStore,
+  ObtenerSaldoUsuarioAFecha,
 } from "../../index";
 import { JSX, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import vacioverde from "../../assets/vacioverde.json";
 import vaciorojo from "../../assets/vaciorojo.json";
 import vacioazul from "../../assets/vacioazul.json";
@@ -39,6 +42,7 @@ import {
   TypeTabButton,
   TypeTabs,
   TypeBadge,
+  BalanceTrace,
 } from './MovimientosTemplate.styles';
 
 
@@ -48,7 +52,9 @@ export const MovimientosTemplate = (): JSX.Element => {
   const [state, setState] = useState(false);
   const [stateAccionesRegistro, setStateAccionesRegistro] = useState(false);
   const [tipoRegistro, setTipoRegistro] = useState<Tipo | undefined>(undefined);
-  const { setTipoMovimientos, selectTipoMovimiento: tipo } = useOperaciones();
+  const [incluirSaldoAnterior, setIncluirSaldoAnterior] = useState(true);
+  const { setTipoMovimientos, selectTipoMovimiento: tipo, date } = useOperaciones();
+  const { usuario } = useUsuariosStore();
   const {
     datamovimientos,
     filtroDescripcion,
@@ -60,6 +66,15 @@ export const MovimientosTemplate = (): JSX.Element => {
   const [stateListaCategorias, setStateListaCategorias] = useState(false);
 
   const [dataSelect, setDataSelect] = useState<Movimiento | undefined>(undefined);
+  const fechaInicio = date.startOf("month").format("YYYY-MM-DD");
+
+  const { data: saldoMesAnterior = 0, isLoading: isLoadingSaldoAnterior } = useQuery<number, Error>({
+    queryKey: ["saldo anterior movimientos global", usuario?.id, fechaInicio],
+    queryFn: () => ObtenerSaldoUsuarioAFecha(usuario?.id ?? 0, fechaInicio),
+    enabled: !!usuario?.id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   const cambiarTipo = (p: Tipo): void => {
     setTipoMovimientos(p);
@@ -120,6 +135,16 @@ export const MovimientosTemplate = (): JSX.Element => {
     });
   };
 
+  const esPagado = (estado: unknown): boolean => {
+    if (typeof estado === "boolean") return estado;
+    if (typeof estado === "number") return estado === 1;
+    if (typeof estado === "string") {
+      const valor = estado.trim().toLowerCase();
+      return valor === "1" || valor === "true";
+    }
+    return false;
+  };
+
   const filteredDatamovimientos: DataMovimientos = {
     i: filterMovimientos(datamovimientos?.i || []),
     g: filterMovimientos(datamovimientos?.g || []),
@@ -127,26 +152,16 @@ export const MovimientosTemplate = (): JSX.Element => {
   };
 
   const calculateFilteredTotals = (tipoMovimiento: "i" | "g" | "b" | "t") => {
-    const esPagadoLocal = (estado: unknown): boolean => {
-      if (typeof estado === "boolean") return estado;
-      if (typeof estado === "number") return estado === 1;
-      if (typeof estado === "string") {
-        const valor = estado.trim().toLowerCase();
-        return valor === "1" || valor === "true";
-      }
-      return false;
-    };
-
     if (tipoMovimiento === "b") {
       const ing = filteredDatamovimientos.i;
       const gas = filteredDatamovimientos.g;
 
       const tIng = ing.reduce((sum, item) => sum + Number(item.valor), 0);
       const tGas = gas.reduce((sum, item) => sum + Number(item.valor), 0);
-      const pIng = ing.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
-      const pGas = gas.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
-      const penIng = ing.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
-      const penGas = gas.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pIng = ing.filter(item => esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pGas = gas.filter(item => esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const penIng = ing.filter(item => !esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const penGas = gas.filter(item => !esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
 
       return {
         total: tIng - tGas,
@@ -156,19 +171,44 @@ export const MovimientosTemplate = (): JSX.Element => {
     } else if (tipoMovimiento === "t") {
       const movs = filteredDatamovimientos.t;
       const total = movs.reduce((sum, item) => sum + Number(item.valor), 0);
-      const pagados = movs.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
-      const pendientes = movs.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pagados = movs.filter(item => esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pendientes = movs.filter(item => !esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
       return { total, pagados, pendientes };
     } else {
       const movs = filteredDatamovimientos[tipoMovimiento as "i" | "g"];
       const total = movs.reduce((sum, item) => sum + Number(item.valor), 0);
-      const pagados = movs.filter(item => esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
-      const pendientes = movs.filter(item => !esPagadoLocal(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pagados = movs.filter(item => esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
+      const pendientes = movs.filter(item => !esPagado(item.estado)).reduce((sum, item) => sum + Number(item.valor), 0);
       return { total, pagados, pendientes };
     }
   };
 
   const totals = calculateFilteredTotals(tipo.tipo as "i" | "g" | "b" | "t");
+  const ingresosPagados = filteredDatamovimientos.i
+    .filter(item => esPagado(item.estado))
+    .reduce((sum, item) => sum + Number(item.valor || 0), 0);
+  const gastosPagados = filteredDatamovimientos.g
+    .filter(item => esPagado(item.estado))
+    .reduce((sum, item) => sum + Number(item.valor || 0), 0);
+  const transferenciasPagadas = filteredDatamovimientos.t
+    .filter(item => esPagado(item.estado))
+    .reduce((sum, item) => sum + Number(item.valor || 0), 0);
+  const resultadoMes = ingresosPagados - gastosPagados;
+  const saldoTrazado = incluirSaldoAnterior ? saldoMesAnterior + resultadoMes : resultadoMes;
+  const formulaTrazabilidad = incluirSaldoAnterior ? (
+    <>
+      Saldo mes anterior + <span className="formula-ingreso">ingresos</span> - <span className="formula-gasto">gastos</span>
+    </>
+  ) : (
+    <>
+      <span className="formula-ingreso">Ingresos</span> - <span className="formula-gasto">gastos</span> del mes
+    </>
+  );
+  const claseMonto = (valor: number): string => {
+    if (valor > 0) return "positivo";
+    if (valor < 0) return "negativo";
+    return "neutro";
+  };
   const totalVisible =
     tipo.tipo === "b"
       ? (filteredDatamovimientos.i?.length || 0) +
@@ -294,26 +334,93 @@ export const MovimientosTemplate = (): JSX.Element => {
         </FloatingActionToggle>
       </FloatingActionMenu>
 
-      <section className="totales">
-        <CardTotales
-          total={totals.pendientes}
-          title={obtenerTitulo(tipo.tipo as "i" | "g" | "b" | "t", "pendientes")}
-          color={tipo.color}
-          icono={<v.flechaarribalarga />}
-        />
-        <CardTotales
-          total={totals.pagados}
-          title={obtenerTitulo(tipo.tipo as "i" | "g" | "b" | "t", "pagados")}
-          color={tipo.color}
-          icono={<v.flechaabajolarga />}
-        />
-        <CardTotales
-          total={totals.total}
-          title="Total"
-          color={tipo.color}
-          icono={<v.balance />}
-        />
-      </section>
+      {tipo.tipo !== "b" && (
+        <section className="totales">
+          <CardTotales
+            total={totals.pendientes}
+            title={obtenerTitulo(tipo.tipo as "i" | "g" | "b" | "t", "pendientes")}
+            color={tipo.color}
+            icono={<v.flechaarribalarga />}
+          />
+          <CardTotales
+            total={totals.pagados}
+            title={obtenerTitulo(tipo.tipo as "i" | "g" | "b" | "t", "pagados")}
+            color={tipo.color}
+            icono={<v.flechaabajolarga />}
+          />
+          <CardTotales
+            total={totals.total}
+            title="Total"
+            color={tipo.color}
+            icono={<v.balance />}
+          />
+        </section>
+      )}
+
+      {tipo.tipo === "b" && (
+        <BalanceTrace onClick={(e) => e.stopPropagation()}>
+          <div className="trace-header">
+            <div className="trace-title">
+              <span>Trazabilidad</span>
+              <div className="trace-amount-row">
+                <strong>{usuario?.moneda} {isLoadingSaldoAnterior && incluirSaldoAnterior ? "..." : saldoTrazado.toFixed(2)}</strong>
+                <div className="trace-formula">{formulaTrazabilidad}</div>
+              </div>
+              <small>{incluirSaldoAnterior ? "Saldo estimado del período" : "Diferencia pagada del mes"}</small>
+            </div>
+            <div className="trace-actions" aria-label="Modo de trazabilidad">
+              <button
+                type="button"
+                className={incluirSaldoAnterior ? "active" : ""}
+                onClick={() => setIncluirSaldoAnterior(true)}
+              >
+                Con saldo anterior
+              </button>
+              <button
+                type="button"
+                className={!incluirSaldoAnterior ? "active" : ""}
+                onClick={() => setIncluirSaldoAnterior(false)}
+              >
+                Solo mes
+              </button>
+            </div>
+          </div>
+          <div className="trace-summary" aria-label="Resumen de balance del mes">
+            <div className={`summary-item ${claseMonto(totals.pendientes)}`}>
+              <span>Pendiente del mes</span>
+              <strong>{usuario?.moneda} {totals.pendientes.toFixed(2)}</strong>
+            </div>
+            <div className={`summary-item ${claseMonto(totals.pagados)}`}>
+              <span>Pagado del mes</span>
+              <strong>{usuario?.moneda} {totals.pagados.toFixed(2)}</strong>
+            </div>
+            <div className={`summary-item ${claseMonto(totals.total)}`}>
+              <span>Balance del mes</span>
+              <strong>{usuario?.moneda} {totals.total.toFixed(2)}</strong>
+            </div>
+          </div>
+          <div className="trace-grid">
+            <div className={`trace-item ${!incluirSaldoAnterior ? "muted" : ""}`}>
+              <span>Saldo mes anterior</span>
+              <strong>{usuario?.moneda} {incluirSaldoAnterior && isLoadingSaldoAnterior ? "..." : saldoMesAnterior.toFixed(2)}</strong>
+              {!incluirSaldoAnterior && <small>No incluido en el cálculo actual</small>}
+            </div>
+            <div className="trace-item ingreso">
+              <span>(+) Ingresos pagados</span>
+              <strong>+{usuario?.moneda} {ingresosPagados.toFixed(2)}</strong>
+            </div>
+            <div className="trace-item gasto">
+              <span>(-) Gastos pagados</span>
+              <strong>-{usuario?.moneda} {gastosPagados.toFixed(2)}</strong>
+            </div>
+            <div className="trace-item transferencia">
+              <span>Transferencias internas</span>
+              <strong>{usuario?.moneda} 0.00</strong>
+              <small>{usuario?.moneda} {transferenciasPagadas.toFixed(2)} movidos entre cuentas</small>
+            </div>
+          </div>
+        </BalanceTrace>
+      )}
 
       <section className="main">
 
