@@ -68,8 +68,8 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
       idusuario: usuario.id,
     };
 
-    setEstadoproceso(true);
     try {
+      setEstadoproceso(true);
       if (accion === "Editar" && dataSelect.id) {
         const updateData: CuentaUpdate = {
           ...baseData,
