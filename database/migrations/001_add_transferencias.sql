@@ -245,12 +245,14 @@ $$;
 
 -- 7. Función para informes: retorna todos los tipos del mes sin filtrar.
 DROP FUNCTION IF EXISTS public.mmovimientosmesanio_all(INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.mmovimientosmesanio_all(INTEGER, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS public.mmovimientosmesanio_all(INTEGER, INTEGER, UUID);
 
 CREATE OR REPLACE FUNCTION public.mmovimientosmesanio_all(
   anio INTEGER,
   mes INTEGER,
-  iduser INTEGER
+  iduser INTEGER,
+  p_idcuenta INTEGER DEFAULT NULL
 )
 RETURNS TABLE(
   id INTEGER,
@@ -260,7 +262,11 @@ RETURNS TABLE(
   categoria TEXT,
   tipocategoria TEXT,
   estado BOOLEAN,
-  monto NUMERIC
+  monto NUMERIC,
+  idcuenta_origen INTEGER,
+  cuenta_origen TEXT,
+  idcuenta_destino INTEGER,
+  cuenta_destino TEXT
 )
 LANGUAGE sql
 AS $$
@@ -278,7 +284,11 @@ SELECT
   END AS categoria,
   m.tipo::TEXT AS tipocategoria,
   (m.estado::BOOLEAN) AS estado,
-  m.valor AS monto
+  m.valor AS monto,
+  m.idcuenta_origen,
+  co.descripcion AS cuenta_origen,
+  m.idcuenta_destino,
+  cd.descripcion AS cuenta_destino
 FROM public.movimientos m
 LEFT JOIN public.cuenta c ON c.id = m.idcuenta
 LEFT JOIN public.categorias cat ON cat.id = m.idcategoria
@@ -288,6 +298,12 @@ WHERE
   DATE_PART('year', m.fecha) = anio
   AND DATE_PART('month', m.fecha) = mes
   AND m.idusuario = iduser
+  AND (
+    p_idcuenta IS NULL
+    OR m.idcuenta = p_idcuenta
+    OR m.idcuenta_origen = p_idcuenta
+    OR m.idcuenta_destino = p_idcuenta
+  )
 ORDER BY m.fecha DESC;
 $$;
 

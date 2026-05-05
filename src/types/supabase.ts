@@ -273,6 +273,7 @@ export type Database = {
           anio: number;
           mes: number;
           iduser: number;
+          p_idcuenta?: number | null;
         };
         Returns: {
           id: number;
@@ -283,6 +284,10 @@ export type Database = {
           tipocategoria: string;
           estado: boolean;
           monto: number;
+          idcuenta_origen: number | null;
+          cuenta_origen: string | null;
+          idcuenta_destino: number | null;
+          cuenta_destino: string | null;
         }[];
       };
       mmovimientosmesaniotop5: {
