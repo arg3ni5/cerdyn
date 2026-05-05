@@ -112,10 +112,10 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
             idcategoria: null,
             categoria: item.categoria,
             valorymoneda: String(item.monto),
-            idcuenta_origen: null,
-            cuenta_origen: null,
-            idcuenta_destino: null,
-            cuenta_destino: null,
+            idcuenta_origen: item.idcuenta_origen,
+            cuenta_origen: item.cuenta_origen,
+            idcuenta_destino: item.idcuenta_destino,
+            cuenta_destino: item.cuenta_destino,
           } as MovimientosMesAnio[number]);
         });
 
