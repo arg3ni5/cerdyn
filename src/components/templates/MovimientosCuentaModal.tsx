@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Cuenta, Movimiento, useUsuariosStore, ObtenerSaldoCuentaAFecha } from "../../index";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Cuenta, Movimiento, useUsuariosStore, ObtenerSaldoCuentaAFecha, RegistrarMovimientos } from "../../index";
 import { supabase } from "../../supabase/supabase.config";
 import dayjs from "dayjs";
 import styled from "styled-components";
+import { Pencil } from "lucide-react";
 
 interface MovimientosCuentaModalProps {
 	cuenta: Cuenta;
@@ -94,39 +95,70 @@ const ModalContent = styled.div`
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
+				gap: 0.75rem;
+				color: ${({ theme }) => theme.text};
 
 				&.ingreso {
 					border-left-color: #10b981;
-					background: rgba(16, 185, 129, 0.05);
+					background: ${({ theme }) => `linear-gradient(0deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.08)), ${theme.bgAlpha}`};
 				}
 
 				&.gasto {
 					border-left-color: #ef4444;
-					background: rgba(239, 68, 68, 0.05);
+					background: ${({ theme }) => `linear-gradient(0deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.08)), ${theme.bgAlpha}`};
 				}
 
 				&.transferencia {
 					border-left-color: #3b82f6;
-					background: rgba(59, 130, 246, 0.05);
+					background: ${({ theme }) => `linear-gradient(0deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.1)), ${theme.bgAlpha}`};
 				}
 
 				.item-info {
 					flex: 1;
+					min-width: 0;
 
 					.item-descripcion {
 						font-weight: 500;
 						margin-bottom: 0.25rem;
+						overflow-wrap: anywhere;
 					}
 
 					.item-fecha {
 						font-size: 0.85rem;
-						color: ${({ theme }) => theme.textSecondary};
+						color: ${({ theme }) => theme.colorSubtitle};
+					}
+				}
+
+				.item-actions {
+					display: inline-flex;
+					align-items: center;
+					gap: 0.5rem;
+					flex: 0 0 auto;
+				}
+
+				.edit-button {
+					width: 34px;
+					height: 34px;
+					border: 1px solid ${({ theme }) => theme.text}22;
+					border-radius: 50%;
+					background: ${({ theme }) => theme.bg};
+					color: ${({ theme }) => theme.text};
+					display: grid;
+					place-items: center;
+					cursor: pointer;
+					transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+
+					&:hover {
+						transform: translateY(-1px);
+						border-color: #667df4;
+						color: #667df4;
 					}
 				}
 
 				.item-valor {
 					font-weight: 600;
 					font-size: 1.1rem;
+					white-space: nowrap;
 
 					&.ingreso {
 						color: #10b981;
@@ -142,7 +174,7 @@ const ModalContent = styled.div`
 		.sin-movimientos {
 			text-align: center;
 			padding: 2rem;
-			color: ${({ theme }) => theme.textSecondary || 'rgba(0,0,0,0.6)'};
+			color: ${({ theme }) => theme.colorSubtitle};
 
 			p {
 				margin: 0;
@@ -165,6 +197,7 @@ const ModalContent = styled.div`
 				justify-content: space-between;
 				align-items: center;
 				padding: 0.25rem 0;
+				gap: 1rem;
 
 				&.main-balance {
 					margin-top: 0.5rem;
@@ -176,11 +209,13 @@ const ModalContent = styled.div`
 
 				.label {
 					font-size: 0.95rem;
-					color: ${({ theme }) => theme.textSecondary || 'rgba(0,0,0,0.6)'};
+					color: ${({ theme }) => theme.colorSubtitle};
 				}
 
 				.valor {
 					font-weight: 600;
+					color: ${({ theme }) => theme.text};
+					text-align: right;
 
 					&.ingreso {
 						color: #10b981;
@@ -197,7 +232,10 @@ const ModalContent = styled.div`
 
 export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaModalProps) => {
 	const { usuario } = useUsuariosStore();
+	const queryClient = useQueryClient();
 	const [movimientosFiltrados, setMovimientosFiltrados] = useState<Movimiento[]>([]);
+	const [openRegistro, setOpenRegistro] = useState(false);
+	const [dataSelect, setDataSelect] = useState<Movimiento | undefined>(undefined);
 	const now = dayjs();
 	const [date, setDate] = useState(now);
 	const fechaInicio = date.startOf("month").format("YYYY-MM-DD");
@@ -265,6 +303,17 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 		}
 	};
 
+	const editarMovimiento = (movimiento: Movimiento): void => {
+		setDataSelect(movimiento);
+		setOpenRegistro(true);
+	};
+
+	const cerrarRegistro = (): void => {
+		setOpenRegistro(false);
+		void queryClient.invalidateQueries({ queryKey: ["movimientos-cuenta", cuenta.id] });
+		void queryClient.invalidateQueries({ queryKey: ["saldo-anterior", cuenta.id] });
+	};
+
 	// Componente de calendario lineal para navegación de meses
 	const handlePrevMonth = () => setDate(date.subtract(1, 'month'));
 	const handleNextMonth = () => setDate(date.add(1, 'month'));
@@ -275,6 +324,12 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 
 	return (
 		<ModalOverlay onClick={handleClose}>
+			<RegistrarMovimientos
+				accion="Editar"
+				dataSelect={dataSelect}
+				state={openRegistro}
+				setState={cerrarRegistro}
+			/>
 			<ModalContent onClick={(e) => e.stopPropagation()}>
 				<div className="modal-header">
 					<h2>
@@ -362,8 +417,19 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 													{dayjs(movimiento.fecha).format("DD MMM YYYY")}
 												</div>
 											</div>
-											<div className={`item-valor ${esEntrada ? "ingreso" : "gasto"}`}>
-												{esEntrada ? "+" : "-"} {usuario?.moneda} {Math.abs(movimiento.valor || 0).toFixed(2)}
+											<div className="item-actions">
+												<div className={`item-valor ${esEntrada ? "ingreso" : "gasto"}`}>
+													{esEntrada ? "+" : "-"} {usuario?.moneda} {Math.abs(movimiento.valor || 0).toFixed(2)}
+												</div>
+												<button
+													type="button"
+													className="edit-button"
+													onClick={() => editarMovimiento(movimiento)}
+													aria-label={`Editar movimiento ${movimiento.descripcion || "sin descripción"}`}
+													title="Editar movimiento"
+												>
+													<Pencil size={17} strokeWidth={2.3} />
+												</button>
 											</div>
 										</div>
 									);
