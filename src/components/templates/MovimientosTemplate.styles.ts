@@ -516,10 +516,16 @@ export const FilterBar = styled.div`
 
   .filter-row {
     display: grid;
-    grid-template-columns: minmax(240px, 1fr) minmax(210px, auto);
+    grid-template-columns: minmax(320px, 1fr) minmax(180px, 220px) minmax(180px, 220px);
     gap: 12px;
     align-items: center;
     min-width: 0;
+  }
+
+  @media (max-width: 1080px) {
+    .filter-row {
+      grid-template-columns: minmax(280px, 1fr) minmax(180px, 220px);
+    }
   }
 
   @media (max-width: 720px) {
@@ -537,9 +543,40 @@ export const FilterBar = styled.div`
 
 export const FilterSearch = styled.div`
   min-width: 0;
+  height: 44px;
+  border: 1px solid ${({ theme }) => theme.text}18;
+  border-radius: 14px;
+  background: ${({ theme }) => theme.bgAlpha || theme.bg};
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  > div {
+    width: 100%;
+    min-width: 0;
+  }
 
   input {
-    min-height: 46px;
+    min-height: 0;
+    height: 42px;
+    line-height: 42px;
+    border: none;
+    border-bottom: none;
+    background: transparent;
+    padding: 0;
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  input:focus {
+    border-bottom: none;
+  }
+
+  &:focus-within {
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.primary}1f;
   }
 `;
 
@@ -610,14 +647,53 @@ export const TypeTabButton = styled.button<AccentProps & { $active: boolean }>`
 `;
 
 export const CategoryFilter = styled.div`
-  min-width: 210px;
+  min-width: 0;
 
   > div {
+    display: block;
+    position: relative;
     width: 100%;
+  }
+
+  > div > div:first-child {
+    height: 44px;
+    min-height: 0;
+    border-radius: 14px;
+    background: ${({ theme }) => theme.bgAlpha || theme.bg};
+  }
+
+  > div > div:first-child > div {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  > div > div:first-child > div span:first-child {
+    flex: 0 0 auto;
+  }
+
+  > div > div:first-child > div span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .filter-list {
+    position: relative;
+  }
+
+  .filter-list > div {
+    min-width: min(320px, calc(100vw - 48px));
   }
 
   @media (max-width: 720px) {
     min-width: 0;
+
+    .filter-list > div {
+      min-width: 100%;
+    }
   }
 `;
 
