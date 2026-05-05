@@ -1,6 +1,7 @@
 import styled from "styled-components";
-import { CalendarioLineal, Header, Tabs, ContentFiltros, Btndesplegable, ListaMenuDesplegable, DataDesplegableMovimientos, useOperaciones, Tipo, useMovimientosStore, useUsuariosStore, v } from "../../index";
+import { CalendarioLineal, Header, Tabs, ContentFiltros, Btndesplegable, ListaMenuDesplegable, DataDesplegableMovimientos, useOperaciones, Tipo, useUsuariosStore, v, DataMovimientos, MovimientosMesAnioAll, useMovimientosStore } from "../../index";
 import { JSX, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { downloadJson } from "../../utils/export/downloadUtils";
 import { exportToExcel } from "../../utils/export/excelExport";
 import { exportToPdf } from "../../utils/export/pdfExport";
@@ -13,7 +14,7 @@ export const InformesTemplate = (): JSX.Element => {
     date,
   } = useOperaciones();
   const { idusuario } = useUsuariosStore();
-  const { rptMovimientosAñoMesJson, mostrarMovimientos } = useMovimientosStore();
+  const { datamovimientos, mostrarMovimientos } = useMovimientosStore();
   const [stateTipo, setStateTipo] = useState<boolean>(false);
   const [state, setState] = useState<boolean>(false);
   const [exporting, setExporting] = useState<'json' | 'excel' | 'pdf' | null>(null);
@@ -37,30 +38,58 @@ export const InformesTemplate = (): JSX.Element => {
     tipocategoria: tipo.tipo,
   });
 
-  /**
-   * Fetch movements for the current filter, ensuring only the types requested
-   * by the active tipocategoria are included (non-selected arrays are empty).
-   */
-  const fetchDataForExport = async () => {
-    const params = getParams();
-    const data = await mostrarMovimientos(params);
-    // Normalize: only include movement arrays that match the active filter so
-    // that stale arrays from a previous tipocategoria are not exported.
-    const tipoActivo = params.tipocategoria;
+  const { isLoading: isLoadingMovimientos } = useQuery<DataMovimientos, Error>({
+    queryKey: ['movimientos informes', tipo.tipo, idusuario, date.format('YYYY-MM')],
+    queryFn: () => mostrarMovimientos(getParams()),
+    enabled: !!idusuario && !!tipo?.tipo,
+  });
+
+  const getCuentaExport = (tipoMovimiento: 'i' | 'g' | 't', item: DataMovimientos['i'][number]): string => {
+    if (tipoMovimiento === 't') {
+      const origen = item.cuenta_origen || '';
+      const destino = item.cuenta_destino || '';
+      return origen || destino ? `${origen} -> ${destino}` : item.cuenta ?? '';
+    }
+
+    return item.cuenta ?? '';
+  };
+
+  const getDataForExport = (): DataMovimientos => {
+    const tipoActivo = tipo.tipo;
+
     return {
-      i: tipoActivo === 'i' || tipoActivo === 'b' ? data.i : [],
-      g: tipoActivo === 'g' || tipoActivo === 'b' ? data.g : [],
-      t: tipoActivo === 't' ? data.t : [],
+      i: tipoActivo === 'i' || tipoActivo === 'b' ? datamovimientos?.i || [] : [],
+      g: tipoActivo === 'g' || tipoActivo === 'b' ? datamovimientos?.g || [] : [],
+      t: tipoActivo === 't' || tipoActivo === 'b' ? datamovimientos?.t || [] : [],
     };
+  };
+
+  const getRowsForJsonExport = (): MovimientosMesAnioAll => {
+    const data = getDataForExport();
+    const rows: MovimientosMesAnioAll = [];
+
+    (['i', 'g', 't'] as const).forEach((tipoMovimiento) => {
+      (data[tipoMovimiento] || []).forEach((item) => {
+        rows.push({
+          id: item.id,
+          fecha: item.fecha,
+          descripcion: item.descripcion,
+          cuenta: getCuentaExport(tipoMovimiento, item),
+          categoria: tipoMovimiento === 't' ? 'Transferencia' : item.categoria,
+          tipocategoria: tipoMovimiento,
+          estado: item.estado,
+          monto: item.valor,
+        });
+      });
+    });
+
+    return rows.sort((a, b) => b.fecha.localeCompare(a.fecha));
   };
 
   const handleExportJson = async (): Promise<void> => {
     setExporting('json');
     try {
-      const data = await rptMovimientosAñoMesJson(getParams());
-      if (data) {
-        downloadJson(data, `informe-${getPeriodo()}.json`);
-      }
+      downloadJson(getRowsForJsonExport(), `informe-${getPeriodo()}.json`);
     } catch (error) {
       logger.error('Error al exportar JSON', { error });
       showErrorMessage('No se pudo exportar el informe en formato JSON.');
@@ -72,8 +101,7 @@ export const InformesTemplate = (): JSX.Element => {
   const handleExportExcel = async (): Promise<void> => {
     setExporting('excel');
     try {
-      const data = await fetchDataForExport();
-      await exportToExcel(data, `informe-${getPeriodo()}.xlsx`);
+      await exportToExcel(getDataForExport(), `informe-${getPeriodo()}.xlsx`);
     } catch (error) {
       logger.error('Error al exportar Excel', { error });
       showErrorMessage('No se pudo exportar el informe en formato Excel.');
@@ -85,11 +113,10 @@ export const InformesTemplate = (): JSX.Element => {
   const handleExportPdf = async (): Promise<void> => {
     setExporting('pdf');
     try {
-      const data = await fetchDataForExport();
       exportToPdf({
         titulo: `Informe ${tipo.text}`,
         periodo: getPeriodo(),
-        data,
+        data: getDataForExport(),
         filename: `informe-${getPeriodo()}.pdf`,
       });
     } catch (error) {
@@ -100,7 +127,7 @@ export const InformesTemplate = (): JSX.Element => {
     }
   };
 
-  const exportDisabled = exporting !== null || !idusuario;
+  const exportDisabled = exporting !== null || isLoadingMovimientos || !idusuario;
 
   return (
     <Container>

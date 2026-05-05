@@ -272,10 +272,10 @@ export type Database = {
         Args: {
           anio: number;
           mes: number;
-          iduser: string;
+          iduser: number;
         };
         Returns: {
-          id: string;
+          id: number;
           fecha: string;
           descripcion: string;
           cuenta: string;

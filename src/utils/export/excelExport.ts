@@ -18,16 +18,37 @@ const TIPO_LABELS: Record<string, string> = {
   t: 'Transferencia',
 };
 
+type MovimientoExportable = DataMovimientos[keyof DataMovimientos][number] & {
+  cuenta_origen?: string | null;
+  cuenta_destino?: string | null;
+};
+
+const getCuenta = (tipo: 'i' | 'g' | 't', item: MovimientoExportable): string => {
+  if (tipo === 't') {
+    const origen = item.cuenta_origen || '';
+    const destino = item.cuenta_destino || '';
+    return origen || destino ? `${origen} -> ${destino}` : item.cuenta ?? '';
+  }
+
+  return item.cuenta ?? '';
+};
+
+const getCategoria = (tipo: 'i' | 'g' | 't', item: MovimientoExportable): string => {
+  if (tipo === 't') return 'Transferencia';
+  return item.categoria ?? '';
+};
+
 const buildRows = (data: DataMovimientos): ExcelRow[] => {
   const rows: ExcelRow[] = [];
 
   const addMovimientos = (tipo: 'i' | 'g' | 't') => {
     (data[tipo] || []).forEach((item) => {
+      const movimiento = item as MovimientoExportable;
       rows.push({
         Fecha: item.fecha ?? '',
         Descripción: item.descripcion ?? '',
-        Categoría: item.categoria ?? '',
-        Cuenta: item.cuenta ?? '',
+        Categoría: getCategoria(tipo, movimiento),
+        Cuenta: getCuenta(tipo, movimiento),
         Valor: Number(item.valor),
         Estado: item.estado ? 'Pagado' : 'Pendiente',
         Tipo: TIPO_LABELS[tipo],

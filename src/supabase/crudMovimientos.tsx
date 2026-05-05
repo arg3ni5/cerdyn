@@ -84,6 +84,8 @@ export const ActualizarMovimientos = async (p: MovimientoUpdate): Promise<void> 
 
 export type MovimientosMesAnioParams = Database["public"]["Functions"]["mmovimientosmesanio"]["Args"];
 export type MovimientosMesAnio = Database["public"]["Functions"]["mmovimientosmesanio"]["Returns"];
+export type MovimientosMesAnioAllParams = Database["public"]["Functions"]["mmovimientosmesanio_all"]["Args"];
+export type MovimientosMesAnioAll = Database["public"]["Functions"]["mmovimientosmesanio_all"]["Returns"];
 
 const RPC_TIMEOUT = 10000; // 10 segundos timeout para RPC calls
 
@@ -107,6 +109,21 @@ export const MostrarMovimientosPorMesAño = async (p: MovimientosMesAnioParams):
   } catch (error) {
     logger.error('Error al mostrar movimientos por mes/año', { error, params: p });
     showErrorMessage('No se pudieron cargar los movimientos. Por favor, intenta nuevamente.');
+    return null;
+  }
+};
+
+export const MostrarMovimientosPorMesAñoAll = async (p: MovimientosMesAnioAllParams): Promise<MovimientosMesAnioAll | null> => {
+  try {
+    const { data, error } = await withTimeout(
+      supabase.rpc("mmovimientosmesanio_all", p),
+      RPC_TIMEOUT
+    );
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    logger.error('Error al mostrar todos los movimientos por mes/año', { error, params: p });
+    showErrorMessage('No se pudieron cargar los movimientos para el informe. Por favor, intenta nuevamente.');
     return null;
   }
 };
