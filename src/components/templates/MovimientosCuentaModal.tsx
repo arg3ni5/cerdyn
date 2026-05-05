@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cuenta, Movimiento, useUsuariosStore, ObtenerSaldoCuentaAFecha, RegistrarMovimientos, Spinner } from "../../index";
+import { Cuenta, Movimiento, MovimientosMesAnioAll, useUsuariosStore, ObtenerSaldoCuentaAFecha, RegistrarMovimientos, Spinner, MostrarMovimientosPorMesAñoAll } from "../../index";
 import { supabase } from "../../supabase/supabase.config";
 import dayjs from "dayjs";
 import styled from "styled-components";
@@ -10,6 +10,13 @@ interface MovimientosCuentaModalProps {
 	cuenta: Cuenta;
 	onClose: () => void;
 }
+
+type MovimientoDetalleCuenta = Movimiento & {
+	cuenta?: string | null;
+	categoria?: string | null;
+	cuenta_origen?: string | null;
+	cuenta_destino?: string | null;
+};
 
 const ModalOverlay = styled.div`
 	position: fixed;
@@ -133,6 +140,13 @@ const ModalContent = styled.div`
 						font-size: 0.85rem;
 						color: ${({ theme }) => theme.colorSubtitle};
 					}
+
+					.item-meta {
+						font-size: 0.82rem;
+						color: ${({ theme }) => theme.colorSubtitle};
+						margin-top: 0.2rem;
+						overflow-wrap: anywhere;
+					}
 				}
 
 				.item-actions {
@@ -245,40 +259,68 @@ const ModalContent = styled.div`
 export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaModalProps) => {
 	const { usuario } = useUsuariosStore();
 	const queryClient = useQueryClient();
-	const [movimientosFiltrados, setMovimientosFiltrados] = useState<Movimiento[]>([]);
+	const [movimientosFiltrados, setMovimientosFiltrados] = useState<MovimientoDetalleCuenta[]>([]);
 	const [openRegistro, setOpenRegistro] = useState(false);
 	const [dataSelect, setDataSelect] = useState<Movimiento | undefined>(undefined);
+	const [isLoadingEdit, setIsLoadingEdit] = useState(false);
 	const now = dayjs();
 	const [date, setDate] = useState(now);
 	const fechaInicio = date.startOf("month").format("YYYY-MM-DD");
 	const fechaFin = date.endOf("month").format("YYYY-MM-DD");
+	const anio = date.year();
+	const mes = date.month() + 1;
+
+	const mapMovimientoDetalle = (movimiento: MovimientosMesAnioAll[number]): MovimientoDetalleCuenta => ({
+		id: movimiento.id,
+		descripcion: movimiento.descripcion,
+		valor: Number(movimiento.monto ?? 0),
+		fecha: movimiento.fecha,
+		estado: movimiento.estado,
+		idcategoria: null,
+		idcuenta: movimiento.tipocategoria === "t" ? null : cuenta.id,
+		idcuenta_origen: movimiento.idcuenta_origen ?? null,
+		idcuenta_destino: movimiento.idcuenta_destino ?? null,
+		tipo: movimiento.tipocategoria,
+		cuenta: movimiento.cuenta,
+		categoria: movimiento.categoria,
+		cuenta_origen: movimiento.cuenta_origen,
+		cuenta_destino: movimiento.cuenta_destino,
+	});
+
+	const movimientoPerteneceACuenta = (movimiento: MovimientosMesAnioAll[number]) => {
+		const cuentaId = Number(cuenta.id);
+
+		if (movimiento.tipocategoria === "t") {
+			return movimiento.idcuenta_origen === cuentaId || movimiento.idcuenta_destino === cuentaId;
+		}
+
+		return movimiento.cuenta === cuenta.descripcion;
+	};
 
 	// Obtener movimientos del mes (incluyendo transferencias)
-	const { data: movimientos, isLoading: isLoadingMovs, isFetching: isFetchingMovs } = useQuery<Movimiento[], Error>({
-		queryKey: ["movimientos-cuenta", cuenta.id, fechaInicio, fechaFin],
+	const { data: movimientos, isLoading: isLoadingMovs, isFetching: isFetchingMovs } = useQuery<MovimientoDetalleCuenta[], Error>({
+		queryKey: ["movimientos-cuenta", cuenta.id, usuario?.id, anio, mes],
 		queryFn: async () => {
 			try {
 				const cuentaId = Number(cuenta.id);
-				if (!Number.isInteger(cuentaId) || cuentaId <= 0) {
+				const iduser = Number(usuario?.id);
+
+				if (!Number.isInteger(cuentaId) || cuentaId <= 0 || !Number.isInteger(iduser) || iduser <= 0) {
 					return [];
 				}
-				const { data, error } = await supabase
-					.from("movimientos")
-					.select("*")
-					.or(`idcuenta.eq.${cuentaId},idcuenta_origen.eq.${cuentaId},idcuenta_destino.eq.${cuentaId}`)
-					.eq("estado", true)
-					.gte("fecha", fechaInicio)
-					.lte("fecha", fechaFin)
-					.order("fecha", { ascending: false });
 
-				if (error) throw error;
-				return data as Movimiento[];
+				const data = await MostrarMovimientosPorMesAñoAll({ anio, mes, iduser, p_idcuenta: cuentaId });
+
+				return (data ?? [])
+					.filter((movimiento) => movimiento.estado)
+					.filter(movimientoPerteneceACuenta)
+					.map(mapMovimientoDetalle);
 			} catch (error) {
 				console.error("Error al cargar movimientos:", error);
 				return [];
 			}
 		},
-		enabled: !!cuenta.id,
+		enabled: !!cuenta.id && !!usuario?.id,
 	});
 
 	const { data: saldoAnterior, isLoading: isLoadingSaldo, isFetching: isFetchingSaldo } = useQuery({
@@ -315,9 +357,26 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 		}
 	};
 
-	const editarMovimiento = (movimiento: Movimiento): void => {
-		setDataSelect(movimiento);
-		setOpenRegistro(true);
+	const editarMovimiento = async (movimiento: MovimientoDetalleCuenta): Promise<void> => {
+		setIsLoadingEdit(true);
+
+		try {
+			const { data, error } = await supabase
+				.from("movimientos")
+				.select("*")
+				.eq("id", movimiento.id)
+				.single();
+
+			if (error) throw error;
+			setDataSelect((data as Movimiento) || movimiento);
+			setOpenRegistro(true);
+		} catch (error) {
+			console.error("Error al cargar movimiento para edición:", error);
+			setDataSelect(movimiento);
+			setOpenRegistro(true);
+		} finally {
+			setIsLoadingEdit(false);
+		}
 	};
 
 	const cerrarRegistro = (): void => {
@@ -333,7 +392,14 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 
 	const saldoInicial = saldoAnterior || 0;
 	const saldoFinal = saldoInicial + totalIngresos - totalGastos + totalTransferenciasEntrantes - totalTransferenciasSalientes;
-	const isModalLoading = isLoadingMovs || isFetchingMovs || isLoadingSaldo || isFetchingSaldo;
+	const isModalLoading = isLoadingMovs || isFetchingMovs || isLoadingSaldo || isFetchingSaldo || isLoadingEdit;
+	const buildDetalleMovimiento = (movimiento: MovimientoDetalleCuenta, esTransferencia: boolean) => {
+		if (esTransferencia) {
+			return `${movimiento.cuenta_origen || "Origen"} -> ${movimiento.cuenta_destino || "Destino"}`;
+		}
+
+		return [movimiento.categoria, movimiento.cuenta].filter(Boolean).join(" · ");
+	};
 
 	return (
 		<ModalOverlay onClick={handleClose}>
@@ -432,6 +498,9 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 												<div className="item-fecha">
 													{dayjs(movimiento.fecha).format("DD MMM YYYY")}
 												</div>
+												<div className="item-meta">
+													{buildDetalleMovimiento(movimiento, esTransferencia)}
+												</div>
 											</div>
 											<div className="item-actions">
 												<div className={`item-valor ${esEntrada ? "ingreso" : "gasto"}`}>
@@ -440,7 +509,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 												<button
 													type="button"
 													className="edit-button"
-													onClick={() => editarMovimiento(movimiento)}
+													onClick={() => void editarMovimiento(movimiento)}
 													disabled={isModalLoading}
 													aria-label={`Editar movimiento ${movimiento.descripcion || "sin descripción"}`}
 													title="Editar movimiento"
