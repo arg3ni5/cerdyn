@@ -1,18 +1,9 @@
-import Swal from "sweetalert2";
+import { useToastStore } from '../store/ToastStore'
 
-export const showErrorMessage = (text: string, title: string = "Error"): void => {
-  Swal.fire({
-    icon: "error",
-    title,
-    text
-  });
-};
+export const showErrorMessage = (text: string, _title: string = "Error"): void => {
+  useToastStore.getState().addToast({ type: 'error', message: text, duration: 4000 })
+}
 
-export const showSuccessMessage = (text: string = "Operación exitosa", timer: number = 1500): void => {
-  Swal.fire({
-    icon: "success",
-    title: text,
-    showConfirmButton: false,
-    timer
-  });
-};
+export const showSuccessMessage = (text: string = "Operación exitosa", timer: number = 3000): void => {
+  useToastStore.getState().addToast({ type: 'success', message: text, duration: timer })
+}

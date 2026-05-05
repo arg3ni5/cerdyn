@@ -1,12 +1,17 @@
 import styled from "styled-components";
 import { Header, useUsuariosStore, useConexionesStore, Conexion } from "../../index";
-import Swal from "sweetalert2";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence } from "motion/react";
+import { ConfirmDialog } from "../moleculas/ConfirmDialog";
+import { useToastStore } from "../../store/ToastStore";
 
 export const ConexionesTemplate: React.FC = () => {
   const { usuario } = useUsuariosStore();
   const { mostrarConexiones, conexiones, eliminarConexion } = useConexionesStore();
   const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+  const [pendingConexion, setPendingConexion] = useState<Conexion | null>(null);
 
   const { isLoading, error } = useQuery({
     queryKey: ["mostrar conexiones", usuario?.id],
@@ -24,33 +29,39 @@ export const ConexionesTemplate: React.FC = () => {
     return null;
   }
 
-  const confirmarEliminacion = async (conexion: Conexion) => {
-    const result = await Swal.fire({
-      title: "¿Eliminar esta conexión?",
-      text: `@${conexion.canal_username || "sin username"} (${conexion.canal})`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Sí, Eliminar",
-      cancelButtonText: "Cancelar",
-    });
+  const confirmarEliminacion = (conexion: Conexion) => {
+    setPendingConexion(conexion);
+  };
 
-    if (result.isConfirmed) {
-      try {
-        await eliminarConexion(conexion);
-        await queryClient.invalidateQueries({
-          queryKey: ["mostrar conexiones", usuario.id],
-        });
-        await Swal.fire("Eliminado", "La conexión se eliminó correctamente.", "success");
-      } catch {
-        await Swal.fire("Error", "No se pudo eliminar la conexión.", "error");
-      }
+  const handleConfirmDelete = async () => {
+    if (!pendingConexion) return;
+    try {
+      await eliminarConexion(pendingConexion);
+      await queryClient.invalidateQueries({
+        queryKey: ["mostrar conexiones", usuario!.id],
+      });
+      addToast({ type: 'success', message: 'La conexión se eliminó correctamente.', duration: 3000 });
+    } catch {
+      addToast({ type: 'error', message: 'No se pudo eliminar la conexión.', duration: 4000 });
+    } finally {
+      setPendingConexion(null);
     }
   };
 
   return (
     <Container>
+      <AnimatePresence>
+        {pendingConexion && (
+          <ConfirmDialog
+            title="¿Eliminar esta conexión?"
+            message={`@${pendingConexion.canal_username || "sin username"} (${pendingConexion.canal})`}
+            confirmText="Sí, eliminar"
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setPendingConexion(null)}
+          />
+        )}
+      </AnimatePresence>
+
       <header className="header">
         <Header stateConfig={{ state: false, setState: () => {} }} />
       </header>

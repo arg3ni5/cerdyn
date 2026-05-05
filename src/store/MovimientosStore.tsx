@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   MostrarMovimientosPorMesAño,
+  MostrarMovimientosPorMesAñoAll,
   InsertarMovimientos,
   EliminarMovimientos,
   RptMovimientosPorMesAño,
@@ -87,16 +88,51 @@ export const useMovimientosStore = create<MovimientosState>()((set, get) => ({
   mostrarMovimientos: async (p: MovimientosMesAnioParams) => {
     try {
       set({ parametros: p });
-      const currentState = get();
 
-      let i = p.tipocategoria === "i" || p.tipocategoria === "b" ?
+      if (p.tipocategoria === "b") {
+        const rows = await MostrarMovimientosPorMesAñoAll({
+          anio: p.anio,
+          mes: p.mes,
+          iduser: p.iduser,
+        }) || [];
+
+        const response: DataMovimientos = { i: [], g: [], t: [] };
+
+        rows.forEach((item) => {
+          if (item.tipocategoria !== "i" && item.tipocategoria !== "g" && item.tipocategoria !== "t") return;
+
+          const isTransfer = item.tipocategoria === 't';
+          response[item.tipocategoria].push({
+            id: item.id,
+            descripcion: item.descripcion,
+            valor: item.monto,
+            fecha: item.fecha,
+            estado: esPagado(item.estado),
+            idcuenta: null,
+            cuenta: item.cuenta,
+            idcategoria: null,
+            categoria: item.categoria,
+            valorymoneda: new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(item.monto),
+            idcuenta_origen: null,
+            cuenta_origen: isTransfer ? item.cuenta : null,
+            idcuenta_destino: null,
+            cuenta_destino: null,
+          } as MovimientosMesAnio[number]);
+        });
+
+        const { setDatamovimientos } = get();
+        setDatamovimientos(response);
+        return response;
+      }
+
+      const currentState = get();
+      let i = p.tipocategoria === "i" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "i" }) || [] : currentState.datamovimientos.i || [];
-      let g = p.tipocategoria === "g" || p.tipocategoria === "b" ?
+      let g = p.tipocategoria === "g" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "g" }) || [] : currentState.datamovimientos.g || [];
-      let t = p.tipocategoria === "t" || p.tipocategoria === "b" ?
+      let t = p.tipocategoria === "t" ?
         await MostrarMovimientosPorMesAño({ ...p, tipocategoria: "t" }) || [] : currentState.datamovimientos.t || [];
 
-      // Convertir estado a booleano
       i = i?.map(item => ({
         ...item,
         estado: esPagado(item.estado)

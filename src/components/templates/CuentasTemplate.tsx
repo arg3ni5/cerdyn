@@ -1,9 +1,10 @@
 import { Header, v, useOperaciones, Tipo, Btndesplegable, ListaMenuDesplegable, DataDesplegableCuenta, RegistrarCuentas, Cuenta, CuentaInsert, CuentaUpdate, Accion, showSuccessMessage, showErrorMessage } from "../../index";
 import { useState } from "react";
 import { useUsuariosStore, useCuentaStore } from "../../index";
-import Swal from "sweetalert2";
 import { Container, ContentFiltro } from "./CuentasTemplate.styles";
 import { MovimientosCuentaModal } from "./MovimientosCuentaModal";
+import { AnimatePresence } from "motion/react";
+import { ConfirmDialog } from "../moleculas/ConfirmDialog";
 
 interface CuentasTemplateProps {
 	data: Cuenta[];
@@ -19,6 +20,8 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 	const [dataSelect, setDataSelect] = useState<CuentaInsert | CuentaUpdate>({});
 	const [stateTipo, setStateTipo] = useState(false);
 	const { selectTipoCuenta, setTipoCuenta } = useOperaciones();
+	const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const cambiarTipo = (p: Tipo) => {
 		setTipoCuenta(p);
@@ -53,25 +56,22 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 		setOpenRegistro(true);
 	};
 
-	const handleDelete = async (id: number) => {
-		const result = await Swal.fire({
-			title: '¿Estás seguro?',
-			text: "No podrás revertir esta acción",
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonColor: '#3085d6',
-			cancelButtonColor: '#d33',
-			confirmButtonText: 'Sí, eliminar',
-			cancelButtonText: 'Cancelar'
-		});
+	const handleDelete = (id: number) => {
+		setConfirmDeleteId(id);
+	};
 
-		if (result.isConfirmed) {
-			try {
-				await eliminarCuenta(id);
-				showSuccessMessage('Cuenta eliminada correctamente');
-			} catch (error) {
-				showErrorMessage('Error al eliminar la cuenta');
-			}
+	const confirmDelete = async () => {
+		if (confirmDeleteId == null) return;
+		setIsDeleting(true);
+		try {
+			const success = await eliminarCuenta(confirmDeleteId);
+			if (!success) throw new Error('No se pudo eliminar la cuenta');
+			showSuccessMessage('Cuenta eliminada correctamente');
+		} catch (error) {
+			showErrorMessage('Error al eliminar la cuenta');
+		} finally {
+			setIsDeleting(false);
+			setConfirmDeleteId(null);
 		}
 	};
 
@@ -98,6 +98,19 @@ export const CuentasTemplate = ({ data }: CuentasTemplateProps) => {
 					onClose={() => setCuentaSeleccionada(null)}
 				/>
 			)}
+
+			<AnimatePresence>
+				{confirmDeleteId != null && (
+					<ConfirmDialog
+						title="¿Eliminar cuenta?"
+						message="No podrás revertir esta acción."
+						confirmText="Sí, eliminar"
+						onConfirm={confirmDelete}
+						onCancel={() => setConfirmDeleteId(null)}
+						isLoading={isDeleting}
+					/>
+				)}
+			</AnimatePresence>
 
 			<header className="header">
 				<Header stateConfig={{ state: state, setState: openUser }} />

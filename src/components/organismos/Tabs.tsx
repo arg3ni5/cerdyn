@@ -9,6 +9,7 @@ import {
   useUsuariosStore,
   Barras,
   DataRptMovimientosAñoMes,
+  SpinnerLoader,
 } from "../../index";
 import { useQuery } from "@tanstack/react-query";
 interface ContainerProps {
@@ -69,7 +70,7 @@ export const Tabs = (): JSX.Element => {
     enabled: !!idusuario && !!tipo?.tipo
   });
 
-  if (isLoading) return <h1>Cargando</h1>;
+  if (isLoading) return <SpinnerLoader />;
   if (error) return <h1>Error</h1>;
 
   const tabIcons = [<v.iconopie />, <v.iconobars />];

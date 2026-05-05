@@ -48,7 +48,8 @@ Grupos simples de átomos unidos junto para una función específica. Todavía s
 - `InputBuscadorLista.tsx` - Input con búsqueda en lista
 - `ItemsDesplegable.tsx` - Items de menú desplegable
 - `ListaMenuDesplegable.tsx` - Menú completo desplegable
-- `Spinner.tsx` - Indicador de carga
+- `Spinner.tsx` - Indicador de carga local para formularios o acciones puntuales
+- `SpinnerLoader.tsx` - Loader global de pantalla completa para carga de página/ruta
 - `Carousel.tsx` - Carrusel de items
 - `ListaGenerica.tsx` - Lista genérica reutilizable
 
@@ -58,13 +59,42 @@ Grupos simples de átomos unidos junto para una función específica. Todavía s
 - ✅ Pueden tener pequeño estado local
 - ✅ Lógica de UI simple
 
+#### Loading: `Spinner` vs `SpinnerLoader`
+
+La app usa dos indicadores de carga con responsabilidades distintas para que no compitan entre sí:
+
+- `SpinnerLoader`: carga global de página/ruta. Se renderiza a pantalla completa con `position: fixed`, cubre toda la ventana y se usa en cargas iniciales, rutas protegidas, `Suspense`, páginas como `Cuentas`, `Dashboard`, `ImportarMovimientos` e `Informes`.
+- `Spinner`: carga local de una acción. Se renderiza dentro del contenedor afectado, por ejemplo dentro de `.sub-contenedor` en `RegistrarCuentas` y `RegistrarCategorias`, con `aria-busy` y controles deshabilitados mientras guarda.
+
+Regla práctica: si el usuario no puede usar la página todavía, usa `SpinnerLoader`; si solo está bloqueada una acción o modal, usa `Spinner`.
+
+```typescript
+// Carga de página
+if (isLoading) return <SpinnerLoader />;
+
+// Carga local de formulario
+<div className="sub-contenedor" aria-busy={estadoProceso}>
+  {estadoProceso && <Spinner />}
+  <form>...</form>
+</div>
+```
+
+En `InformesTemplate` existe además un tiempo mínimo de carga (`MIN_LOADING_TIME_MS = 500`) para que el `SpinnerLoader` sea perceptible cuando la consulta responde demasiado rápido:
+
+```typescript
+if (showMinimumLoading || isLoadingMovimientos || !idusuario) {
+  return <SpinnerLoader />;
+}
+```
+
+Evita renderizar los dos loaders al mismo tiempo para la misma operación. Si una página ya devuelve `SpinnerLoader`, no actives además `LoadingContext` para ese mismo `isLoading`.
+
 #### Ejemplo:
 ```typescript
-// Molécula: Spinner + Texto
+// Molécula: loader global de pantalla completa
 export const SpinnerLoader = () => (
   <Container>
-    <Spinner />
-    <Text>Cargando...</Text>
+    <HashLoader color="#7f3ceb" size={200} />
   </Container>
 );
 ```

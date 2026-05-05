@@ -1,8 +1,8 @@
-import { JSX, useEffect, useState } from "react";
+import { JSX, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Switch } from "@mui/material";
 import { motion, AnimatePresence } from "motion/react";
-import { X } from "lucide-react";
+import { CircleCheck, Loader2, X } from "lucide-react";
 import {
   useMovimientosStore,
   useCategoriasStore,
@@ -26,15 +26,16 @@ import {
   Cuenta,
 } from "../../../index";
 import { ConfigRecurrencia } from "../../../store/MovimientosStore";
-import { showConfirmDialog } from "../../../utils/messages";
 import { useQuery } from "@tanstack/react-query";
-import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, CloseButton, Container, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
+import { AccionesRecurrencia, BtnPreview, BtnToggleRecurrencia, CloseButton, Container, ContainerDescripcion, ContainerFecha, ContainerFuepagado, ContainerMonto, ContainerPreview, ContainerRecurrencia, ContainerRecurrenciaOpciones, ContenedorBotones, ContenedorDropdown, FilaCamposRecurrencia, FilaRecurrencia, MensualHint, StickyFooter, WrapperPagoFecha } from "./RegistrarMovimientos.styles";
+import { ConfirmDialog } from "../../moleculas/ConfirmDialog";
 
 interface RegistrarMovimientosProps {
   setState: () => void;
   state: boolean;
   dataSelect: Movimiento | undefined;
   accion?: Accion;
+  tipoRegistro?: Tipo;
 }
 
 interface FormInputs {
@@ -56,7 +57,15 @@ const esPagado = (estado: unknown): boolean => {
   return false;
 };
 
-export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movimiento, accion }: RegistrarMovimientosProps): JSX.Element => {
+const obtenerTituloMovimiento = (accion: Accion | undefined, tipoMovimiento: Tipo): string => {
+  if (accion === "Editar") return "Editar movimiento";
+  if (tipoMovimiento?.tipo === "g") return "Nuevo Gasto";
+  if (tipoMovimiento?.tipo === "i") return "Nuevo Ingreso";
+  if (tipoMovimiento?.tipo === "t") return "Nueva Transferencia";
+  return "Nuevo movimiento";
+};
+
+export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movimiento, accion, tipoRegistro }: RegistrarMovimientosProps): JSX.Element => {
   const { cuentaItemSelect, mostrarCuentas, selectCuenta } = useCuentaStore();
   const { selectTipoMovimiento } = useOperaciones();
   const { idusuario } = useUsuariosStore();
@@ -85,6 +94,9 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   const [politica, setPolitica] = useState<'este_mes' | 'proximo_mes'>('este_mes');
   const [previewFechas, setPreviewFechas] = useState<string[]>([]);
   const [recurrenciaColapsada, setRecurrenciaColapsada] = useState<boolean>(false);
+  const [pendingRecurrencia, setPendingRecurrencia] = useState<MovimientoInsert | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const savingRef = useRef<boolean>(false);
 
   const opcionesModoRecurrencia = [
     { icono: "", descripcion: "Cada N días", value: "intervalo" as const },
@@ -96,7 +108,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     { icono: "", descripcion: "Próximo mes", value: "proximo_mes" as const },
   ];
 
-  const tipoInicial = dataSelect?.tipo || (selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
+  const tipoInicial = dataSelect?.tipo || tipoRegistro?.tipo || (selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
   const [tipoMovimiento, setTipoMovimiento] = useState<Tipo>(
     (tipoInicial ? DataDesplegables.movimientos[tipoInicial] : undefined) || {} as Tipo
   );
@@ -104,12 +116,24 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
 
   const esTransferencia = tipoMovimiento?.tipo === "t";
 
+  const startSaving = (): boolean => {
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setIsSaving(true);
+    return true;
+  };
+
+  const stopSaving = (): void => {
+    savingRef.current = false;
+    setIsSaving(false);
+  };
+
   useEffect(() => {
-    const tipo = dataSelect?.tipo || (accion === "Nuevo" && selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
+    const tipo = dataSelect?.tipo || (accion === "Nuevo" ? tipoRegistro?.tipo : undefined) || (accion === "Nuevo" && selectTipoMovimiento?.tipo !== "b" ? selectTipoMovimiento?.tipo : undefined);
     if (tipo && DataDesplegables.movimientos[tipo]) {
       setTipoMovimiento(DataDesplegables.movimientos[tipo]);
     }
-  }, [dataSelect?.tipo, accion, selectTipoMovimiento?.tipo]);
+  }, [dataSelect?.tipo, accion, tipoRegistro?.tipo, selectTipoMovimiento?.tipo]);
 
   useEffect(() => {
     if (accion === "Editar") {
@@ -126,6 +150,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     formState: { errors },
     handleSubmit,
     watch,
+    reset,
   } = useForm<FormInputs>(
     {
       defaultValues: {
@@ -138,6 +163,19 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
       },
     }
   );
+
+  useEffect(() => {
+    if (!state) return;
+
+    reset({
+      monto: Number(dataSelect?.valor || 0),
+      descripcion: dataSelect?.descripcion || "",
+      fecha: dataSelect?.fecha || fechaactual.toISOString().slice(0, 10),
+      intervaloDias: 30,
+      diaMes: 1,
+      repeticiones: 3,
+    });
+  }, [state, accion, dataSelect?.id, dataSelect?.valor, dataSelect?.descripcion, dataSelect?.fecha, reset]);
 
   const fechaActualForm = watch('fecha');
   const intervaloDiasForm = watch('intervaloDias');
@@ -168,7 +206,21 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     setPreviewFechas([]);
   }, [repeticionesForm]);
 
+  const insertarRecurrente = async (baseData: MovimientoInsert): Promise<void> => {
+    const config: ConfigRecurrencia = {
+      modo: modoRecurrencia,
+      repeticiones,
+      intervaloDias: modoRecurrencia === 'intervalo' ? intervaloDias : undefined,
+      diaMes: modoRecurrencia === 'mensual' ? diaMes : undefined,
+      politica: modoRecurrencia === 'mensual' ? politica : undefined,
+    };
+    await insertarMovimientosRecurrentes(baseData, config);
+    setState();
+  };
+
   const insertar = async (formData: FormInputs): Promise<void> => {
+    if (savingRef.current) return;
+
     if (esTransferencia) {
       if (cuentaOrigen == null) {
         showErrorMessage("Seleccione la cuenta origen");
@@ -217,29 +269,20 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
     try {
       if (esRecurrente) {
         if (repeticiones > 20) {
-          const confirmed = await showConfirmDialog(
-            `Vas a crear ${repeticiones} movimientos recurrentes. ¿Quieres continuar?`,
-            '¿Estás seguro?',
-            `Sí, crear ${repeticiones}`,
-            'Cancelar'
-          );
-          if (!confirmed) return;
+          setPendingRecurrencia(baseData);
+          return;
         }
-        const config: ConfigRecurrencia = {
-          modo: modoRecurrencia,
-          repeticiones,
-          intervaloDias: modoRecurrencia === 'intervalo' ? intervaloDias : undefined,
-          diaMes: modoRecurrencia === 'mensual' ? diaMes : undefined,
-          politica: modoRecurrencia === 'mensual' ? politica : undefined,
-        };
-        await insertarMovimientosRecurrentes(baseData, config);
+        if (!startSaving()) return;
+        await insertarRecurrente(baseData);
       } else {
-        console.log(baseData);
+        if (!startSaving()) return;
         await insertarMovimientos(baseData);
+        setState();
       }
-      setState();
     } catch (err) {
       console.error(err);
+    } finally {
+      stopSaving();
     }
   };
 
@@ -261,6 +304,8 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
   };
 
   const actualizar = async (formData: FormInputs): Promise<void> => {
+    if (savingRef.current) return;
+
     if (esTransferencia) {
       if (cuentaOrigen == null) {
         showErrorMessage("Seleccione la cuenta origen");
@@ -308,13 +353,14 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
           valor: parseFloat(formData.monto.toString()),
         };
     try {
-      console.log('actualizar', baseData);
-
+      if (!startSaving()) return;
       await actualizarMovimientos(baseData);
       setState();
     }
     catch (err) {
       console.error(err);
+    } finally {
+      stopSaving();
     }
   }
 
@@ -418,10 +464,30 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
 
   return (
     <AnimatePresence>
+      {pendingRecurrencia && (
+        <ConfirmDialog
+          title="¿Crear movimientos recurrentes?"
+          message={`Vas a crear ${repeticiones} movimientos recurrentes. ¿Quieres continuar?`}
+          confirmText={`Sí, crear ${repeticiones}`}
+          variant="warning"
+          onConfirm={async () => {
+            try {
+              if (!startSaving()) return;
+              await insertarRecurrente(pendingRecurrencia);
+            } catch (err) {
+              console.error(err);
+            } finally {
+              stopSaving();
+              setPendingRecurrencia(null);
+            }
+          }}
+          onCancel={() => setPendingRecurrencia(null)}
+          isLoading={isSaving}
+        />
+      )}
       {state && (
         <Container
           as={motion.div}
-          onClick={setState}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -435,30 +501,33 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
             <div className="encabezado">
-              <ContenedorDropdown>
-                <Selector
-                  color="#e14e19"
-                  texto1={tipoMovimiento?.text ? accion + " " : ""}
-                  texto2={tipoMovimiento?.text || "Seleccione un tipo"}
-                  funcion={() => setStateTipo(!stateTipo)}
-                />
-
-                {stateTipo && (
-                  <ListaGenerica
-                    placement="down"
-                    mobilePlacement="down"
-                    btnClose={false}
-                    scroll="hidden"
-                    setState={() => setStateTipo(!stateTipo)}
-                    data={DataDesplegableMovimientos.filter(item => item.tipo != "b").map(item => ({
-                      descripcion: item.text,
-                      ...item,
-                    }))}
-                    funcion={cambiarTipo}
+              <div className="encabezado-contenido">
+                <h1>{obtenerTituloMovimiento(accion, tipoMovimiento)}</h1>
+                <ContenedorDropdown className="selector-tipo-movimiento">
+                  <Selector
+                    color="#e14e19"
+                    texto1="Tipo: "
+                    texto2={tipoMovimiento?.text || "Seleccione un tipo"}
+                    funcion={() => setStateTipo(!stateTipo)}
                   />
-                )}
-              </ContenedorDropdown>
-              <CloseButton onClick={setState} type="button">
+
+                  {stateTipo && (
+                    <ListaGenerica
+                      placement="down"
+                      mobilePlacement="down"
+                      btnClose={false}
+                      scroll="hidden"
+                      setState={() => setStateTipo(!stateTipo)}
+                      data={DataDesplegableMovimientos.filter(item => item.tipo != "b").map(item => ({
+                        descripcion: item.text,
+                        ...item,
+                      }))}
+                      funcion={cambiarTipo}
+                    />
+                  )}
+                </ContenedorDropdown>
+              </div>
+              <CloseButton onClick={setState} type="button" disabled={isSaving}>
                 <X size={24} />
               </CloseButton>
             </div>
@@ -467,13 +536,18 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
               <section>
                 <WrapperPagoFecha>
                   <ContainerFuepagado>
-                    <span>{<v.iconocheck />}</span>
                     <label>Fue pagado:</label>
-                    <Switch
-                      onChange={estadoControl}
-                      checked={estado}
-                      color="warning"
-                    />
+                    <div className="pago-control">
+                      <span className="pago-icon">
+                        <CircleCheck size={18} strokeWidth={2.4} />
+                      </span>
+                      <span className="pago-text">{estado ? "Pagado" : "Pendiente"}</span>
+                      <Switch
+                        onChange={estadoControl}
+                        checked={estado}
+                        color="warning"
+                      />
+                    </div>
                   </ContainerFuepagado>
                   <ContainerFecha>
                     <label>Fecha:</label>
@@ -490,21 +564,21 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                   <InputNumber
                     defaultValue={dataSelect.valor!}
                     register={register}
-                    placeholder="Ingrese monto"
+                    placeholder="0.00"
                     errors={errors}
-                    icono={<v.iconocalculadora />}
                   />
                 </ContainerMonto>
 
-                <div>
+                <ContainerDescripcion>
                   <label>Descripción:</label>
                   <InputText
                     defaultValue={dataSelect.descripcion!}
                     register={register}
-                    placeholder="Ingrese una descripcion"
+                    placeholder="Ingrese una descripción"
                     errors={errors}
+                    variant="surface"
                   />
-                </div>
+                </ContainerDescripcion>
 
                 {esTransferencia ? (
                   <>
@@ -788,9 +862,10 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                 <StickyFooter>
                   <BtnForm
                     type="submit"
-                    titulo="Guardar"
+                    titulo={isSaving ? "Guardando..." : "Guardar"}
                     bgcolor="#DAC1FF"
-                    icono={<v.iconoguardar />}
+                    icono={isSaving ? <Loader2 className="spin" size={20} /> : <v.iconoguardar />}
+                    disabled={isSaving}
                   />
                   <BtnForm
                     funcion={setState}
@@ -798,6 +873,7 @@ export const RegistrarMovimientos = ({ setState, state, dataSelect = {} as Movim
                     titulo="Cancelar"
                     bgcolor="#ff4d4f"
                     icono={<v.iconocerrar />}
+                    disabled={isSaving}
                   />
                 </StickyFooter>
               </ContenedorBotones>

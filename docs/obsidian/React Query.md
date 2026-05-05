@@ -39,7 +39,7 @@ const { data, isLoading, error, isFetching } = useQuery({
 });
 
 // Usar datos
-{isLoading && <Spinner />}
+{isLoading && <SpinnerLoader />}
 {error && <ErrorMessage error={error} />}
 {data && data.map(c => <CuentaCard {...c} />)}
 ```
@@ -98,6 +98,8 @@ const handleCrear = async () => {
 
 {isPending && <Spinner />}
 ```
+
+En mutations, `Spinner` es local porque solo bloquea la acción actual. En queries de página, preferir `SpinnerLoader` para cubrir toda la ruta.
 
 ---
 
@@ -188,7 +190,7 @@ export const Dashboard = () => {
     }
   });
 
-  if (loadingMov || loadingCuentas) return <Spinner />;
+  if (loadingMov || loadingCuentas) return <SpinnerLoader />;
 
   return (
     <Dashboard>
@@ -198,6 +200,31 @@ export const Dashboard = () => {
     </Dashboard>
   );
 };
+```
+
+### Loading en Páginas
+
+Para queries que determinan si una ruta puede mostrarse, el patrón es devolver `SpinnerLoader` desde la página o template:
+
+```typescript
+const { isLoading, error } = useQuery({
+  queryKey: ["mostrar cuentas", selectTipoCuenta, usuario?.id],
+  queryFn: () => mostrarCuentas(params),
+  enabled: !!usuario?.id,
+});
+
+if (isLoading || !usuario?.id) return <SpinnerLoader />;
+if (error) return <ErrorMessage error={error} />;
+
+return <CuentasTemplate data={cuentas} />;
+```
+
+En `InformesTemplate`, además del `isLoading` de React Query, se mantiene un loading visual mínimo de `500ms` para evitar que el loader parpadee o desaparezca antes de ser perceptible.
+
+```typescript
+if (showMinimumLoading || isLoadingMovimientos || !idusuario) {
+  return <SpinnerLoader />;
+}
 ```
 
 ---

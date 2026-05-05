@@ -12,7 +12,7 @@ describe('normalizeTipo', () => {
   it('normalizes ingreso/gasto and detects transfer', () => {
     expect(normalizeTipo('ingreso')).toMatchObject({ kind: 'valid', value: 'i' });
     expect(normalizeTipo('g')).toMatchObject({ kind: 'valid', value: 'g' });
-    expect(normalizeTipo('transferencia')).toMatchObject({ kind: 'transfer', value: null });
+    expect(normalizeTipo('transferencia')).toMatchObject({ kind: 'valid', value: 't' });
   });
 });
 
@@ -21,7 +21,10 @@ describe('validateImportRows', () => {
     { id: 1, tipo: 'g', idusuario: 10, descripcion: 'Supermercado' },
     { id: 2, tipo: 'i', idusuario: 10, descripcion: 'Salario' },
   ];
-  const cuentas = [{ id: 100, idusuario: 10, descripcion: 'Cuenta principal' }];
+  const cuentas = [
+    { id: 100, idusuario: 10, descripcion: 'Cuenta principal' },
+    { id: 101, idusuario: 10, descripcion: 'Ahorros' },
+  ];
 
   it('marks valid rows and reports invalid category/account/transfer issues', () => {
     const rows: ParsedMovimientoRow[] = [
@@ -34,6 +37,8 @@ describe('validateImportRows', () => {
         valor: 1000,
         idcategoria: 1,
         idcuenta: 100,
+        idcuenta_origen: null,
+        idcuenta_destino: null,
       },
       {
         rowNumber: 3,
@@ -44,26 +49,64 @@ describe('validateImportRows', () => {
         valor: 2500,
         idcategoria: 99,
         idcuenta: 100,
+        idcuenta_origen: null,
+        idcuenta_destino: null,
       },
       {
         rowNumber: 4,
         fecha: '2026-01-12',
         descripcion: 'Pase',
         tipoRaw: 'transferencia',
-        tipo: null,
+        tipo: 't',
         valor: 100,
-        idcategoria: 1,
-        idcuenta: 999,
+        idcategoria: null,
+        idcuenta: null,
+        idcuenta_origen: 100,
+        idcuenta_destino: 101,
       },
     ];
 
     const result = validateImportRows(rows, categorias, cuentas, 10);
-    expect(result.validCount).toBe(1);
-    expect(result.invalidCount).toBe(2);
+    expect(result.validCount).toBe(2);
+    expect(result.invalidCount).toBe(1);
     expect(result.transferCount).toBe(1);
     expect(result.issues.some((issue) => issue.code === 'INVALID_CATEGORY')).toBe(true);
-    expect(result.issues.some((issue) => issue.code === 'TRANSFER_NOT_ALLOWED')).toBe(true);
-    expect(result.issues.some((issue) => issue.code === 'INVALID_ACCOUNT')).toBe(true);
+    expect(result.issues.some((issue) => issue.code === 'INVALID_TRANSFER_ACCOUNT')).toBe(false);
+  });
+
+  it('reports transfer account issues', () => {
+    const rows: ParsedMovimientoRow[] = [
+      {
+        rowNumber: 2,
+        fecha: '2026-01-10',
+        descripcion: 'Pase',
+        tipoRaw: 'transferencia',
+        tipo: 't',
+        valor: 100,
+        idcategoria: null,
+        idcuenta: null,
+        idcuenta_origen: 100,
+        idcuenta_destino: 100,
+      },
+      {
+        rowNumber: 3,
+        fecha: '2026-01-10',
+        descripcion: 'Pase externo',
+        tipoRaw: 't',
+        tipo: 't',
+        valor: 100,
+        idcategoria: null,
+        idcuenta: null,
+        idcuenta_origen: 100,
+        idcuenta_destino: 999,
+      },
+    ];
+
+    const result = validateImportRows(rows, categorias, cuentas, 10);
+    expect(result.validCount).toBe(0);
+    expect(result.transferCount).toBe(2);
+    expect(result.issues.some((issue) => issue.code === 'SAME_TRANSFER_ACCOUNT')).toBe(true);
+    expect(result.issues.some((issue) => issue.code === 'INVALID_TRANSFER_ACCOUNT')).toBe(true);
   });
 });
 
@@ -79,6 +122,8 @@ describe('groupCategoryIssues and applyCategoryCorrection', () => {
         valor: 100,
         idcategoria: null,
         idcuenta: null,
+        idcuenta_origen: null,
+        idcuenta_destino: null,
       },
       {
         rowNumber: 3,
@@ -89,6 +134,8 @@ describe('groupCategoryIssues and applyCategoryCorrection', () => {
         valor: 200,
         idcategoria: null,
         idcuenta: null,
+        idcuenta_origen: null,
+        idcuenta_destino: null,
       },
     ];
 

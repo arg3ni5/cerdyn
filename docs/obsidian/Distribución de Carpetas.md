@@ -77,8 +77,8 @@ moleculas/
 ├── ItemsDesplegable.tsx    # Items de menú
 ├── ListaMenuDesplegable.tsx # Menú desplegable
 ├── Lottieanimacion.tsx     # Animación Lottie
-├── Spinner.tsx            # Spinner de carga
-├── SpinnerLoader.tsx      # Loader page completa
+├── Spinner.tsx            # Loader local para formularios/acciones
+├── SpinnerLoader.tsx      # Loader global de pantalla completa
 ├── Carousel.tsx           # Carrusel de items
 ├── ListaGenerica.tsx      # Lista genérica reutilizable
 └── fondosAnimados/

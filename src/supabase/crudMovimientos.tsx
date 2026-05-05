@@ -84,6 +84,8 @@ export const ActualizarMovimientos = async (p: MovimientoUpdate): Promise<void> 
 
 export type MovimientosMesAnioParams = Database["public"]["Functions"]["mmovimientosmesanio"]["Args"];
 export type MovimientosMesAnio = Database["public"]["Functions"]["mmovimientosmesanio"]["Returns"];
+export type MovimientosMesAnioAllParams = Database["public"]["Functions"]["mmovimientosmesanio_all"]["Args"];
+export type MovimientosMesAnioAll = Database["public"]["Functions"]["mmovimientosmesanio_all"]["Returns"];
 
 const RPC_TIMEOUT = 10000; // 10 segundos timeout para RPC calls
 
@@ -107,6 +109,21 @@ export const MostrarMovimientosPorMesAño = async (p: MovimientosMesAnioParams):
   } catch (error) {
     logger.error('Error al mostrar movimientos por mes/año', { error, params: p });
     showErrorMessage('No se pudieron cargar los movimientos. Por favor, intenta nuevamente.');
+    return null;
+  }
+};
+
+export const MostrarMovimientosPorMesAñoAll = async (p: MovimientosMesAnioAllParams): Promise<MovimientosMesAnioAll | null> => {
+  try {
+    const { data, error } = await withTimeout(
+      supabase.rpc("mmovimientosmesanio_all", p),
+      RPC_TIMEOUT
+    );
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    logger.error('Error al mostrar todos los movimientos por mes/año', { error, params: p });
+    showErrorMessage('No se pudieron cargar los movimientos para el informe. Por favor, intenta nuevamente.');
     return null;
   }
 };
@@ -142,18 +159,27 @@ export const RptMovimientosPorMesAñoJson = async (p: RptMovimientosMesAnioParam
 };
 
 
+type MovimientoMesAnioConCuentas = MovimientosMesAnio[number] & {
+  idcuenta?: number | null;
+  idcategoria?: number | null;
+  idcuenta_origen?: number | null;
+  idcuenta_destino?: number | null;
+};
+
 // Add this function after your type definitions and before the other functions
 export const convertToMovimiento = (item: MovimientosMesAnio[number]): Movimiento => {
+  const movimiento = item as MovimientoMesAnioConCuentas;
+
   return {
     id: item.id,
     descripcion: item.descripcion,
     valor: item.valor,
     fecha: item.fecha,
     estado: item.estado,
-    idcategoria: null,
-    idcuenta: null,
-    idcuenta_origen: item.idcuenta_origen ?? null,
-    idcuenta_destino: item.idcuenta_destino ?? null,
+    idcategoria: movimiento.idcategoria ?? null,
+    idcuenta: movimiento.idcuenta ?? null,
+    idcuenta_origen: movimiento.idcuenta_origen ?? null,
+    idcuenta_destino: movimiento.idcuenta_destino ?? null,
     tipo: ''
   } as unknown as Movimiento;
 };

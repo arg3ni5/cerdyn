@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import type { MouseEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BtnCircular,
   v,
@@ -23,8 +25,15 @@ interface MenuOption {
 export const DataUser = ({ stateConfig }: { stateConfig: StateConfig }) => {
   const { user } = useUserAuth(); // user: { name: string; picture: string } | null
   const { signout } = useAuthStore();
+  const navigate = useNavigate();
 
   const funcionXtipo = async (p: MenuOption) => {
+    if (p.tipo === "miperfil" || p.tipo === "configuracion") {
+      navigate("/configurar");
+      stateConfig.setState();
+      return;
+    }
+
     if (p.tipo === "cerrarsesion") {
       await signout();
     }
@@ -33,7 +42,10 @@ export const DataUser = ({ stateConfig }: { stateConfig: StateConfig }) => {
   return (
     <Container
       type="button"
-      onClick={stateConfig.setState}
+      onClick={(e: MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        stateConfig.setState();
+      }}
       aria-haspopup="menu"
       aria-expanded={stateConfig.state}
       aria-label="Abrir menú de usuario"
