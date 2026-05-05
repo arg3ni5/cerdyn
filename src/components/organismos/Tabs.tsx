@@ -12,6 +12,9 @@ import {
   SpinnerLoader,
 } from "../../index";
 import { useQuery } from "@tanstack/react-query";
+interface TabsProps {
+  dataOverride?: DataRptMovimientosAñoMes | null;
+}
 interface ContainerProps {
   theme: {
     bg: string;
@@ -19,7 +22,7 @@ interface ContainerProps {
   };
 }
 
-export const Tabs = (): JSX.Element => {
+export const Tabs = ({ dataOverride }: TabsProps): JSX.Element => {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [gliderStyle, setGliderStyle] = useState<{ left: string; width: string }>({
     left: "0px",
@@ -58,19 +61,20 @@ export const Tabs = (): JSX.Element => {
   const { idusuario } = useUsuariosStore();
   const { date, selectTipoMovimiento: tipo } = useOperaciones();
   const { dataRptMovimientosAñoMes, rptMovimientosAñoMes } = useMovimientosStore();
+  const chartData = dataOverride ?? dataRptMovimientosAñoMes;
 
   const { isLoading, error } = useQuery<DataRptMovimientosAñoMes | null, Error>({
-    queryKey: ['rptMovimientos', tipo, idusuario, date.format('YYYY-MM')],
+    queryKey: ['rptMovimientos', tipo, idusuario, date.format('YYYY-MM'), Boolean(dataOverride)],
     queryFn: () => rptMovimientosAñoMes({
       anio: date.year(),
       mes: date.month() + 1,
       tipocategoria: tipo.tipo,
       iduser: idusuario,
     }),
-    enabled: !!idusuario && !!tipo?.tipo
+    enabled: !!idusuario && !!tipo?.tipo && !dataOverride
   });
 
-  if (isLoading) return <SpinnerLoader />;
+  if (!dataOverride && isLoading) return <SpinnerLoader />;
   if (error) return <h1>Error</h1>;
 
   const tabIcons = [<v.iconopie />, <v.iconobars />];
@@ -101,12 +105,12 @@ export const Tabs = (): JSX.Element => {
           <ChartGrid>
             {((tipo.tipo === "g" || tipo.tipo === "b") && (
               <ChartContainer>
-                <Dona data={dataRptMovimientosAñoMes} tipo={"g"} />
+                <Dona data={chartData} tipo={"g"} />
               </ChartContainer>
             ))}
             {((tipo.tipo === "i" || tipo.tipo === "b") && (
               <ChartContainer>
-                <Dona data={dataRptMovimientosAñoMes} tipo={"i"} />
+                <Dona data={chartData} tipo={"i"} />
               </ChartContainer>
             ))}
           </ChartGrid>
@@ -115,12 +119,12 @@ export const Tabs = (): JSX.Element => {
           <ChartGrid>
             {((tipo.tipo === "g" || tipo.tipo === "b") && (
               <ChartContainer>
-                <Barras data={dataRptMovimientosAñoMes} tipo={"g"} horizontal />
+                <Barras data={chartData} tipo={"g"} horizontal />
               </ChartContainer>
             ))}
             {((tipo.tipo === "i" || tipo.tipo === "b") && (
               <ChartContainer>
-                <Barras data={dataRptMovimientosAñoMes} tipo={"i"} horizontal />
+                <Barras data={chartData} tipo={"i"} horizontal />
               </ChartContainer>
             ))}
           </ChartGrid>
@@ -130,12 +134,12 @@ export const Tabs = (): JSX.Element => {
           <ChartGrid>
             {((tipo.tipo === "g" || tipo.tipo === "b") && (
               <ChartContainer>
-                <Lineal data={dataRptMovimientosAñoMes} tipo={'g'} />
+                <Lineal data={chartData} tipo={'g'} />
               </ChartContainer>
             ))}
             {((tipo.tipo === "i" || tipo.tipo === "b") && (
               <ChartContainer>
-                <Lineal data={dataRptMovimientosAñoMes} tipo={'i'} />
+                <Lineal data={chartData} tipo={'i'} />
               </ChartContainer>
             ))}
           </ChartGrid>
