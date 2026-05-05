@@ -243,9 +243,49 @@ return <div>{data}</div>;
 // ✅ BIEN - Maneja todos los estados
 const { data, isLoading, error } = useQuery(...);
 
-if (isLoading) return <Spinner />;
+if (isLoading) return <SpinnerLoader />;
 if (error) return <ErrorMessage error={error} />;
 return <div>{data}</div>;
+```
+
+### Convención de Loading
+
+La aplicación separa la carga de página de la carga local:
+
+- `SpinnerLoader`: usar para estados donde la pantalla/ruta todavía no está lista. Ejemplos: autenticación inicial en `App`, fallback de `Suspense`, queries principales de `Cuentas`, `Dashboard`, `Informes`, `ImportarMovimientos` y queries compartidas de gráficos en `Tabs`.
+- `Spinner`: usar para acciones locales dentro de un contenedor específico. Ejemplos: guardar desde `RegistrarCuentas` o `RegistrarCategorias`.
+- `LoadingContext`: usar solo cuando una pantalla necesita controlar un loader global desde componentes internos. Si la página ya hace `return <SpinnerLoader />`, no sincronices ese mismo `isLoading` con `setIsLoading`, porque se duplican los loaders.
+
+```typescript
+// Página/ruta: carga global
+if (isLoading || !usuario?.id) {
+  return <SpinnerLoader />;
+}
+
+// Formulario/modal: carga local
+<div className="sub-contenedor" aria-busy={estadoProceso}>
+  {estadoProceso && <Spinner />}
+  <form>...</form>
+</div>
+```
+
+Cuando una carga es tan rápida que el usuario no alcanza a percibirla, se puede usar un tiempo mínimo visual. Hoy se aplica en `InformesTemplate` con `MIN_LOADING_TIME_MS = 500`.
+
+```typescript
+const [showMinimumLoading, setShowMinimumLoading] = useState(true);
+
+useEffect(() => {
+  setShowMinimumLoading(true);
+  const timeoutId = window.setTimeout(() => {
+    setShowMinimumLoading(false);
+  }, 500);
+
+  return () => window.clearTimeout(timeoutId);
+}, [tipo.tipo, idusuario, date]);
+
+if (showMinimumLoading || isLoadingMovimientos || !idusuario) {
+  return <SpinnerLoader />;
+}
 ```
 
 ---
