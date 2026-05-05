@@ -26,11 +26,6 @@ interface TablaTransferenciasProps {
   setAccion: (value: Accion) => void;
 }
 
-type TransferenciaRow = MovimientosMesAnio[number] & {
-  cuenta_origen: string | null;
-  cuenta_destino: string | null;
-};
-
 export const TablaTransferencias = ({
   titulo,
   tipo,
@@ -76,15 +71,11 @@ export const TablaTransferencias = ({
     return false;
   };
 
-  const obtenerCuentaOrigen = (item: TransferenciaRow): string => {
-    return item.cuenta_origen || "-";
+  const obtenerCuenta = (item: MovimientosMesAnio[number]): string => {
+    return item.cuenta || "-";
   };
 
-  const obtenerCuentaDestino = (item: TransferenciaRow): string => {
-    return item.cuenta_destino || "-";
-  };
-
-  const editar = (item: TransferenciaRow): void => {
+  const editar = (item: MovimientosMesAnio[number]): void => {
     setOpenRegistro(true);
     setDataSelect({ ...convertToMovimiento(item), tipo: "t" } as Movimiento);
     setAccion("Editar");
@@ -125,8 +116,7 @@ export const TablaTransferencias = ({
               <tr>
                 <th scope="col">Pagado</th>
                 <th scope="col">Descripción</th>
-                <th scope="col">Origen</th>
-                <th scope="col">Destino</th>
+                <th scope="col">Cuenta</th>
                 <th scope="col">Valor</th>
                 <th scope="col"></th>
               </tr>
@@ -137,7 +127,7 @@ export const TablaTransferencias = ({
                 .map((group, groupIndex) => (
                   <React.Fragment key={`transfer-group-${groupIndex}`}>
                     <tr className="group-header">
-                      <td colSpan={6}>
+                      <td colSpan={5}>
                         <FechaHeader>
                           {(() => {
                             const [anio, mes, dia] = group.fecha.split("-").map(Number);
@@ -153,8 +143,6 @@ export const TablaTransferencias = ({
                       </td>
                     </tr>
                     {group.movimientos.map((item) => {
-                      const transferencia = item as TransferenciaRow;
-
                       return (
                         <tr key={item.id}>
                           <th scope="row">
@@ -167,12 +155,11 @@ export const TablaTransferencias = ({
                             <span className="status-text">{esPagado(item.estado) ? "Pagado" : "Pendiente"}</span>
                           </th>
                           <td data-title="Descripción">{item.descripcion || "Transferencia"}</td>
-                          <td data-title="Origen">{obtenerCuentaOrigen(transferencia)}</td>
-                          <td data-title="Destino">{obtenerCuentaDestino(transferencia)}</td>
+                          <td data-title="Cuenta">{obtenerCuenta(item)}</td>
                           <td data-title="Valor">{item.valorymoneda}</td>
                           <td data-title="Acciones">
                             <ContentAccionesTabla
-                              funcionEditar={() => editar(transferencia)}
+                              funcionEditar={() => editar(item)}
                               funcionEliminar={() => setPendingDelete(convertToMovimiento(item))}
                             />
                           </td>
