@@ -340,6 +340,13 @@ export type Database = {
         };
         Returns: number;
       };
+      fn_obtener_saldo_usuario_a_fecha: {
+        Args: {
+          p_idusuario: number;
+          p_fecha: string;
+        };
+        Returns: number;
+      };
     };
     Enums: {
       [_ in never]: never;
