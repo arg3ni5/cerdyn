@@ -592,7 +592,7 @@ const EmptyState = styled.div`
   padding: 34px 24px;
   border: 1px dashed #9955ff66;
   border-radius: 26px;
-  background: ${({ theme }) => theme.bg}cc;
+  background: color-mix(in srgb, ${({ theme }) => theme.bg} 80%, transparent);
   color: ${({ theme }) => theme.text};
   text-align: center;
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.08);
