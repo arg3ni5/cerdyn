@@ -1,33 +1,41 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ComponentType } from "react";
 import { Routes, Route } from "react-router-dom";
 import AuthCallback from "../pages/AuthCallback";
 import { ProtectedRoute } from "../hooks/ProtectedRoute";
 import { useUserAuth } from "../context/AuthContent";
 import { SpinnerLoader } from "../components/moleculas/SpinnerLoader";
 
-const Login = lazy(async () => await import("../pages/Login").then((module) => ({ default: module.Login })));
-const Home = lazy(async () => await import("../pages/Home").then((module) => ({ default: module.Home })));
-const Configuracion = lazy(
-  async () => await import("../pages/Configuracion").then((module) => ({ default: module.Configuracion }))
-);
-const Categorias = lazy(
-  async () => await import("../pages/Categorias").then((module) => ({ default: module.Categorias }))
-);
-const Movimientos = lazy(
-  async () => await import("../pages/Movimientos").then((module) => ({ default: module.Movimientos }))
-);
-const ImportarMovimientos = lazy(
-  async () => await import("../pages/ImportarMovimientos").then((module) => ({ default: module.ImportarMovimientos }))
-);
-const Informes = lazy(
-  async () => await import("../pages/Informes").then((module) => ({ default: module.Informes }))
-);
-const Vincular = lazy(async () => await import("../pages/Vincular").then((module) => ({ default: module.Vincular })));
-const Conexiones = lazy(
-  async () => await import("../pages/Conexiones").then((module) => ({ default: module.Conexiones }))
-);
-const Dashboard = lazy(async () => await import("../pages/Dashboard").then((module) => ({ default: module.Dashboard })));
-const Cuentas = lazy(async () => await import("../pages/Cuentas").then((module) => ({ default: module.Cuentas })));
+const lazyPage = <TModule extends Record<TExport, ComponentType>, TExport extends keyof TModule>(
+  importer: () => Promise<TModule>,
+  exportName: TExport
+) => lazy(async () => await importer().then((module) => ({ default: module[exportName] })));
+
+const Login = lazyPage(() => import("../pages/Login"), "Login");
+const Home = lazyPage(() => import("../pages/Home"), "Home");
+const Configuracion = lazyPage(() => import("../pages/Configuracion"), "Configuracion");
+const Categorias = lazyPage(() => import("../pages/Categorias"), "Categorias");
+const Movimientos = lazyPage(() => import("../pages/Movimientos"), "Movimientos");
+const ImportarMovimientos = lazyPage(() => import("../pages/ImportarMovimientos"), "ImportarMovimientos");
+const Informes = lazyPage(() => import("../pages/Informes"), "Informes");
+const Vincular = lazyPage(() => import("../pages/Vincular"), "Vincular");
+const Conexiones = lazyPage(() => import("../pages/Conexiones"), "Conexiones");
+const Dashboard = lazyPage(() => import("../pages/Dashboard"), "Dashboard");
+const Cuentas = lazyPage(() => import("../pages/Cuentas"), "Cuentas");
+
+const protectedRoutes = [
+  { path: "/", element: <Home /> },
+  { path: "/home", element: <Home /> },
+  { path: "/dashboard", element: <Dashboard /> },
+  { path: "/cuentas", element: <Cuentas /> },
+  { path: "/conexiones", element: <Conexiones /> },
+  { path: "/vincular", element: <Vincular /> },
+  { path: "/configurar", element: <Configuracion /> },
+  { path: "/categorias", element: <Categorias /> },
+  { path: "/movimientos", element: <Movimientos /> },
+  { path: "/movimientos/importar", element: <ImportarMovimientos /> },
+  { path: "/informes", element: <Informes /> },
+  { path: "/acercade", element: <Home /> },
+];
 
 interface ProtectedRouteProps {
   isLoading: boolean;
@@ -42,18 +50,9 @@ export const MyRoutes = ({ isLoading }: ProtectedRouteProps) => {
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route element={<ProtectedRoute user={user} redirectTo="/" isLoading={isLoading} />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/cuentas" element={<Cuentas />} />
-          <Route path="/conexiones" element={<Conexiones />} />
-          <Route path="/vincular" element={<Vincular />} />
-          <Route path="/configurar" element={<Configuracion />} />
-          <Route path="/categorias" element={<Categorias />} />
-          <Route path="/movimientos" element={<Movimientos />} />
-          <Route path="/movimientos/importar" element={<ImportarMovimientos />} />
-          <Route path="/informes" element={<Informes />} />
-          <Route path="/acercade" element={<Home />} />
+          {protectedRoutes.map((route) => (
+            <Route key={route.path} path={route.path} element={route.element} />
+          ))}
         </Route>
       </Routes>
     </Suspense>

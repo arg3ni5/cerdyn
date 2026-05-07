@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { CalendarioLineal, Header, Tabs, Btndesplegable, ListaMenuDesplegable, DataDesplegableMovimientos, useOperaciones, Tipo, useUsuariosStore, v, DataMovimientos, MovimientosMesAnioAll, useMovimientosStore, SpinnerLoader, useCuentaStore, Cuenta, DataRptMovimientosAñoMes, Selector, ListaGenerica } from "../../index";
-import { JSX, useEffect, useState } from "react";
+import { JSX, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { downloadJson } from "../../utils/export/downloadUtils";
 import { exportToExcel } from "../../utils/export/excelExport";
@@ -16,7 +16,7 @@ export const InformesTemplate = (): JSX.Element => {
     selectTipoMovimiento: tipo,
     date,
   } = useOperaciones();
-  const { idusuario } = useUsuariosStore();
+  const { idusuario, usuario } = useUsuariosStore();
   const { datamovimientos, mostrarMovimientos } = useMovimientosStore();
   const { mostrarCuentas } = useCuentaStore();
   const [stateTipo, setStateTipo] = useState<boolean>(false);
@@ -103,8 +103,32 @@ export const InformesTemplate = (): JSX.Element => {
     };
   };
 
+  const reportData = useMemo(() => getDataForExport(), [datamovimientos, tipo.tipo]);
+
+  const reportSummary = useMemo(() => {
+    const ingresos = reportData.i || [];
+    const gastos = reportData.g || [];
+    const transferencias = reportData.t || [];
+    const sum = (items: DataMovimientos['i']): number =>
+      items.reduce((total, item) => total + Number(item.valor || 0), 0);
+
+    return {
+      totalIngresos: sum(ingresos),
+      totalGastos: sum(gastos),
+      totalTransferencias: sum(transferencias),
+      totalRegistros: ingresos.length + gastos.length + transferencias.length,
+    };
+  }, [reportData]);
+
+  const hasReportRows = reportSummary.totalRegistros > 0;
+
+  const formatCurrency = (valor: number): string =>
+    `${usuario?.moneda || '$'} ${new Intl.NumberFormat('es-ES', {
+      maximumFractionDigits: 0,
+    }).format(valor)}`;
+
   const getRowsForJsonExport = (): MovimientosMesAnioAll => {
-    const data = getDataForExport();
+    const data = reportData;
     const rows: MovimientosMesAnioAll = [];
 
     (['i', 'g', 't'] as const).forEach((tipoMovimiento) => {
@@ -172,7 +196,7 @@ export const InformesTemplate = (): JSX.Element => {
   const handleExportExcel = async (): Promise<void> => {
     setExporting('excel');
     try {
-      await exportToExcel(getDataForExport(), `informe-${getPeriodo()}.xlsx`);
+      await exportToExcel(reportData, `informe-${getPeriodo()}.xlsx`);
     } catch (error) {
       logger.error('Error al exportar Excel', { error });
       showErrorMessage('No se pudo exportar el informe en formato Excel.');
@@ -187,7 +211,7 @@ export const InformesTemplate = (): JSX.Element => {
       exportToPdf({
         titulo: `Informe ${tipo.text}`,
         periodo: getPeriodo(),
-        data: getDataForExport(),
+        data: reportData,
         filename: `informe-${getPeriodo()}.pdf`,
       });
     } catch (error) {
@@ -198,7 +222,7 @@ export const InformesTemplate = (): JSX.Element => {
     }
   };
 
-  const exportDisabled = exporting !== null || isLoadingMovimientos || isLoadingCuentas || !idusuario;
+  const exportDisabled = exporting !== null || isLoadingMovimientos || isLoadingCuentas || !idusuario || !hasReportRows;
 
   if (showMinimumLoading || isLoadingMovimientos || isLoadingCuentas || !idusuario) {
     return <SpinnerLoader />;
@@ -310,8 +334,33 @@ export const InformesTemplate = (): JSX.Element => {
           </button>
         </ExportButtons>
       </section>
+      <SummaryGrid aria-label="Resumen del informe">
+        <SummaryCard $tone="income">
+          <span>Ingresos</span>
+          <strong>{formatCurrency(reportSummary.totalIngresos)}</strong>
+        </SummaryCard>
+        <SummaryCard $tone="expense">
+          <span>Gastos</span>
+          <strong>{formatCurrency(reportSummary.totalGastos)}</strong>
+        </SummaryCard>
+        <SummaryCard $tone="transfer">
+          <span>Transferencias</span>
+          <strong>{formatCurrency(reportSummary.totalTransferencias)}</strong>
+        </SummaryCard>
+        <SummaryCard $tone="count">
+          <span>Registros</span>
+          <strong>{reportSummary.totalRegistros}</strong>
+        </SummaryCard>
+      </SummaryGrid>
       <section className="main">
-        <Tabs dataOverride={getChartDataForCuenta()} />
+        {hasReportRows ? (
+          <Tabs dataOverride={getChartDataForCuenta()} />
+        ) : (
+          <EmptyState>
+            <strong>No hay movimientos para este filtro</strong>
+            <span>Cambia el mes, el tipo o la cuenta para ver datos y habilitar la exportación.</span>
+          </EmptyState>
+        )}
       </section>
     </Container>
   );
@@ -326,6 +375,7 @@ const Container = styled.div`
   grid-template:
     "header" 100px
     "area1" auto
+    "summary" auto
     "main" auto;
 
   .header {
@@ -494,5 +544,68 @@ const CuentaFilter = styled.div<{ $active?: boolean }>`
   .cuenta-list > div {
     width: 100%;
     min-width: 260px;
+  }
+`;
+
+const SummaryGrid = styled.section`
+  grid-area: summary;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+`;
+
+const SummaryCard = styled.article<{ $tone: 'income' | 'expense' | 'transfer' | 'count' }>`
+  border-radius: 20px;
+  padding: 16px;
+  background: ${({ theme }) => theme.bg};
+  border: 1px solid ${({ $tone }) => {
+    const colors = {
+      income: '#22c55e',
+      expense: '#ef4444',
+      transfer: '#9955ff',
+      count: '#0ea5e9',
+    };
+    return colors[$tone];
+  }}33;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
+
+  span {
+    display: block;
+    color: ${({ theme }) => theme.colorSubtitle};
+    font-size: 0.78rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  strong {
+    display: block;
+    color: ${({ theme }) => theme.text};
+    font-size: clamp(1.15rem, 2vw, 1.55rem);
+    line-height: 1.15;
+  }
+`;
+
+const EmptyState = styled.div`
+  width: min(100%, 760px);
+  margin: 32px auto;
+  padding: 34px 24px;
+  border: 1px dashed #9955ff66;
+  border-radius: 26px;
+  background: color-mix(in srgb, ${({ theme }) => theme.bg} 80%, transparent);
+  color: ${({ theme }) => theme.text};
+  text-align: center;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.08);
+
+  strong {
+    display: block;
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    margin-bottom: 8px;
+  }
+
+  span {
+    color: ${({ theme }) => theme.colorSubtitle};
+    display: block;
+    line-height: 1.5;
   }
 `;
