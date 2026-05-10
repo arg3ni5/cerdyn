@@ -5,7 +5,8 @@ as $$
 declare
   v_idcategoria bigint;
 begin
-  if coalesce(new.saldo_actual, 0) > 0 then
+  -- Las tarjetas usan saldo_actual como crédito disponible, no como dinero propio.
+  if coalesce(new.saldo_actual, 0) > 0 and coalesce(new.tipo, 'd') = 'd' then
 
     -- Buscar categoría SALDO INICIAL del usuario
     select id
