@@ -269,6 +269,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const fechaFin = date.endOf("month").format("YYYY-MM-DD");
 	const anio = date.year();
 	const mes = date.month() + 1;
+	const isCreditAccount = cuenta.tipo === "c";
 
 	const mapMovimientoDetalle = (movimiento: MovimientosMesAnioAll[number]): MovimientoDetalleCuenta => ({
 		id: movimiento.id,
@@ -326,7 +327,7 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const { data: saldoAnterior, isLoading: isLoadingSaldo, isFetching: isFetchingSaldo } = useQuery({
 		queryKey: ["saldo-anterior", cuenta.id, fechaInicio],
 		queryFn: () => ObtenerSaldoCuentaAFecha(cuenta.id, fechaInicio),
-		enabled: !!cuenta.id,
+		enabled: !!cuenta.id && !isCreditAccount,
 	});
 
 	useEffect(() => {
@@ -390,9 +391,12 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 	const handleNextMonth = () => setDate(date.add(1, 'month'));
 	const handleSetToday = () => setDate(dayjs());
 
-	const saldoInicial = saldoAnterior || 0;
+	const saldoInicial = isCreditAccount ? 0 : saldoAnterior || 0;
 	const saldoFinal = saldoInicial + totalIngresos - totalGastos + totalTransferenciasEntrantes - totalTransferenciasSalientes;
 	const isModalLoading = isLoadingMovs || isFetchingMovs || isLoadingSaldo || isFetchingSaldo || isLoadingEdit;
+	const limiteCredito = cuenta.limite_credito || cuenta.saldo_actual || 0;
+	const creditoDisponible = cuenta.saldo_actual || 0;
+	const creditoUtilizado = Math.max(limiteCredito - creditoDisponible, 0);
 	const buildDetalleMovimiento = (movimiento: MovimientoDetalleCuenta, esTransferencia: boolean) => {
 		if (esTransferencia) {
 			return `${movimiento.cuenta_origen || "Origen"} -> ${movimiento.cuenta_destino || "Destino"}`;
@@ -435,42 +439,68 @@ export const MovimientosCuentaModal = ({ cuenta, onClose }: MovimientosCuentaMod
 					</div>
 
 					<div className="resumen-totales">
-						<div className="total-row">
-							<span className="label">Saldo mes anterior</span>
-							<span className="valor">
-								{isLoadingSaldo ? "..." : `${usuario?.moneda} ${saldoInicial.toFixed(2)}`}
-							</span>
-						</div>
-						<div className="total-row">
-							<span className="label">(+) Ingresos</span>
-							<span className="valor ingreso">+{usuario?.moneda} {totalIngresos.toFixed(2)}</span>
-						</div>
-						<div className="total-row">
-							<span className="label">(-) Gastos</span>
-							<span className="valor gasto">-{usuario?.moneda} {totalGastos.toFixed(2)}</span>
-						</div>
-						{totalTransferenciasEntrantes > 0 && (
-							<div className="total-row">
-								<span className="label">(+) Transferencias recibidas</span>
-								<span className="valor ingreso">+{usuario?.moneda} {totalTransferenciasEntrantes.toFixed(2)}</span>
-							</div>
+						{isCreditAccount ? (
+							<>
+								<div className="total-row">
+									<span className="label">Límite de crédito</span>
+									<span className="valor">{usuario?.moneda} {limiteCredito.toFixed(2)}</span>
+								</div>
+								<div className="total-row">
+									<span className="label">Crédito utilizado</span>
+									<span className="valor gasto">{usuario?.moneda} {creditoUtilizado.toFixed(2)}</span>
+								</div>
+								<div className="total-row">
+									<span className="label">Compras del período</span>
+									<span className="valor gasto">-{usuario?.moneda} {totalGastos.toFixed(2)}</span>
+								</div>
+								<div className="total-row main-balance">
+									<span className="label">Crédito disponible</span>
+									<span className="valor">{usuario?.moneda} {creditoDisponible.toFixed(2)}</span>
+								</div>
+							</>
+						) : (
+							<>
+								<div className="total-row">
+									<span className="label">Saldo mes anterior</span>
+									<span className="valor">
+										{isLoadingSaldo ? "..." : `${usuario?.moneda} ${saldoInicial.toFixed(2)}`}
+									</span>
+								</div>
+								<div className="total-row">
+									<span className="label">(+) Ingresos</span>
+									<span className="valor ingreso">+{usuario?.moneda} {totalIngresos.toFixed(2)}</span>
+								</div>
+								<div className="total-row">
+									<span className="label">(-) Gastos</span>
+									<span className="valor gasto">-{usuario?.moneda} {totalGastos.toFixed(2)}</span>
+								</div>
+								{totalTransferenciasEntrantes > 0 && (
+									<div className="total-row">
+										<span className="label">(+) Transferencias recibidas</span>
+										<span className="valor ingreso">+{usuario?.moneda} {totalTransferenciasEntrantes.toFixed(2)}</span>
+									</div>
+								)}
+								{totalTransferenciasSalientes > 0 && (
+									<div className="total-row">
+										<span className="label">(-) Transferencias enviadas</span>
+										<span className="valor gasto">-{usuario?.moneda} {totalTransferenciasSalientes.toFixed(2)}</span>
+									</div>
+								)}
+								<div className="total-row main-balance">
+									<span className="label">Saldo final</span>
+									<span className="valor">
+										{isLoadingSaldo || isLoadingMovs ? "..." : `${usuario?.moneda} ${saldoFinal.toFixed(2)}`}
+									</span>
+								</div>
+							</>
 						)}
-						{totalTransferenciasSalientes > 0 && (
-							<div className="total-row">
-								<span className="label">(-) Transferencias enviadas</span>
-								<span className="valor gasto">-{usuario?.moneda} {totalTransferenciasSalientes.toFixed(2)}</span>
-							</div>
-						)}
-						<div className="total-row main-balance">
-							<span className="label">Saldo final</span>
-							<span className="valor">
-								{isLoadingSaldo || isLoadingMovs ? "..." : `${usuario?.moneda} ${saldoFinal.toFixed(2)}`}
-							</span>
-						</div>
 					</div>
 
 					<div className="info-periodo">
 						<p>Movimientos del período: {dayjs(fechaInicio).format("DD MMM")} - {dayjs(fechaFin).format("DD MMM YYYY")}</p>
+						{isCreditAccount && (
+							<p>Corte: día {cuenta.dia_corte || "-"} · Pago: día {cuenta.dia_pago || "-"}</p>
+						)}
 					</div>
 
 					{isLoadingMovs ? (
