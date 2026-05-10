@@ -41,6 +41,11 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
   interface FormInputs {
     descripcion: string;
     saldo_actual: number;
+    limite_credito: number;
+    dia_corte: number;
+    dia_pago: number;
+    tasa_interes: number;
+    pago_minimo_config: number;
     icono: string;
     idusuario?: number;
     id?: number;
@@ -53,18 +58,32 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
     setValue,
   } = useForm<FormInputs>();
 
+  const tipoCuenta = accion === "Editar" && "tipo" in dataSelect && dataSelect.tipo
+    ? dataSelect.tipo
+    : selectTipoCuenta.tipo;
+  const esTarjetaCredito = tipoCuenta === "c";
+
   const submitForm = async (formData: FormInputs): Promise<void> => {
     if (usuario?.id == undefined) {
       return;
     }
 
+    const limiteCredito = Number(formData.limite_credito || 0);
+    const saldoActual = esTarjetaCredito
+      ? (accion === "Editar" ? Number(formData.saldo_actual || 0) : limiteCredito)
+      : Number(formData.saldo_actual || 0);
+
     const baseData = {
       descripcion: formData.descripcion,
-      saldo_actual: Number(formData.saldo_actual),
+      saldo_actual: saldoActual,
       icono: emojiselect,
-      tipo: accion === "Editar" && "tipo" in dataSelect && dataSelect.tipo
-        ? dataSelect.tipo
-        : selectTipoCuenta.tipo,
+      tipo: tipoCuenta,
+      subtipo: esTarjetaCredito ? "tarjeta_credito" : "debito",
+      limite_credito: esTarjetaCredito ? limiteCredito : null,
+      dia_corte: esTarjetaCredito ? Number(formData.dia_corte || 1) : null,
+      dia_pago: esTarjetaCredito ? Number(formData.dia_pago || 1) : null,
+      tasa_interes: esTarjetaCredito ? Number(formData.tasa_interes || 0) : null,
+      pago_minimo_config: esTarjetaCredito ? Number(formData.pago_minimo_config || 0) : null,
       idusuario: usuario.id,
     };
 
@@ -91,6 +110,11 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
     if (accion === "Editar") {
       setValue("descripcion", dataSelect.descripcion || "");
       setValue("saldo_actual", (dataSelect as CuentaUpdate).saldo_actual || 0);
+      setValue("limite_credito", (dataSelect as CuentaUpdate).limite_credito || (dataSelect as CuentaUpdate).saldo_actual || 0);
+      setValue("dia_corte", (dataSelect as CuentaUpdate).dia_corte || 1);
+      setValue("dia_pago", (dataSelect as CuentaUpdate).dia_pago || 1);
+      setValue("tasa_interes", (dataSelect as CuentaUpdate).tasa_interes || 0);
+      setValue("pago_minimo_config", (dataSelect as CuentaUpdate).pago_minimo_config || 0);
       setEmojiselect(dataSelect.icono || "💰");
     }
   }, [accion, dataSelect, setValue]);
@@ -136,16 +160,68 @@ export const RegistrarCuentas = ({ onClose, dataSelect, accion }: RegistrarCuent
                   style={{ textTransform: "capitalize" }}
                 />
               </div>
-              <div>
-                <InputTextNumber
-                  label="Saldo actual"
-                  name="saldo_actual"
-                  defaultValue={(dataSelect as CuentaUpdate).saldo_actual || 0}
-                  register={register}
-                  placeholder="0.00"
-                  errors={errors}
-                />
-              </div>
+              {(!esTarjetaCredito || accion === "Editar") && (
+                <div>
+                  <InputTextNumber
+                    label={esTarjetaCredito ? "Crédito disponible actual" : "Saldo actual"}
+                    name="saldo_actual"
+                    defaultValue={(dataSelect as CuentaUpdate).saldo_actual || 0}
+                    register={register}
+                    placeholder="0.00"
+                    errors={errors}
+                  />
+                </div>
+              )}
+
+              {esTarjetaCredito && (
+                <>
+                  <div>
+                    <InputTextNumber
+                      label="Límite de crédito"
+                      name="limite_credito"
+                      defaultValue={(dataSelect as CuentaUpdate).limite_credito || (dataSelect as CuentaUpdate).saldo_actual || 0}
+                      register={register}
+                      placeholder="0.00"
+                      errors={errors}
+                    />
+                  </div>
+
+                  <CreditFieldsGrid>
+                    <InputTextNumber
+                      label="Día de corte"
+                      name="dia_corte"
+                      defaultValue={(dataSelect as CuentaUpdate).dia_corte || 1}
+                      register={register}
+                      placeholder="1"
+                      errors={errors}
+                    />
+                    <InputTextNumber
+                      label="Día de pago"
+                      name="dia_pago"
+                      defaultValue={(dataSelect as CuentaUpdate).dia_pago || 1}
+                      register={register}
+                      placeholder="1"
+                      errors={errors}
+                    />
+                    <InputTextNumber
+                      label="Tasa interés %"
+                      name="tasa_interes"
+                      defaultValue={(dataSelect as CuentaUpdate).tasa_interes || 0}
+                      register={register}
+                      placeholder="0"
+                      errors={errors}
+                    />
+                    <InputTextNumber
+                      label="Pago mínimo"
+                      name="pago_minimo_config"
+                      defaultValue={(dataSelect as CuentaUpdate).pago_minimo_config || 0}
+                      register={register}
+                      placeholder="0"
+                      errors={errors}
+                    />
+                  </CreditFieldsGrid>
+                </>
+              )}
 
               <EmojiSection>
                 <label>Ícono</label>
@@ -200,6 +276,16 @@ const EmojiSection = styled.div`
     text-transform: uppercase;
     letter-spacing: 0.1em;
     padding-left: 4px;
+  }
+`;
+
+const CreditFieldsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
   }
 `;
 
