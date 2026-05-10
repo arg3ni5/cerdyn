@@ -93,6 +93,7 @@ export type Database = {
         Update: {
           descripcion?: string;
           icono?: string | null;
+          tipo?: string | null;
           id?: number;
           idusuario?: number | null;
           saldo_actual?: number | null;
@@ -103,6 +104,47 @@ export type Database = {
             columns: ["idusuario"];
             isOneToOne: false;
             referencedRelation: "usuarios";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tarjeta_credito: {
+        Row: {
+          actualizado_en: string;
+          creado_en: string;
+          dia_corte: number | null;
+          dia_pago: number | null;
+          idcuenta: number;
+          limite_credito: number;
+          pago_minimo_config: number;
+          tasa_interes: number;
+        };
+        Insert: {
+          actualizado_en?: string;
+          creado_en?: string;
+          dia_corte?: number | null;
+          dia_pago?: number | null;
+          idcuenta: number;
+          limite_credito?: number;
+          pago_minimo_config?: number;
+          tasa_interes?: number;
+        };
+        Update: {
+          actualizado_en?: string;
+          creado_en?: string;
+          dia_corte?: number | null;
+          dia_pago?: number | null;
+          idcuenta?: number;
+          limite_credito?: number;
+          pago_minimo_config?: number;
+          tasa_interes?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tarjeta_credito_idcuenta_fkey";
+            columns: ["idcuenta"];
+            isOneToOne: true;
+            referencedRelation: "cuenta";
             referencedColumns: ["id"];
           },
         ];
