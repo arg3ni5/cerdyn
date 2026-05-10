@@ -127,6 +127,22 @@ export const Container = styled.div`
         font-weight: 700;
         margin: 0;
       }
+
+      .credit-summary {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+
+        span {
+          padding: 8px 10px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.16);
+          font-size: 0.88rem;
+          font-weight: 700;
+        }
+      }
     }
   }
 
@@ -286,6 +302,45 @@ export const Container = styled.div`
       .balance-label {
         color: ${({ theme }) => theme.colorSubtitle};
         font-size: 0.92rem;
+      }
+
+      .credit-metrics {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .credit-row,
+      .credit-dates {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.9rem;
+      }
+
+      .credit-row span,
+      .credit-dates span {
+        color: ${({ theme }) => theme.colorSubtitle};
+      }
+
+      .credit-row strong {
+        font-size: 0.95rem;
+      }
+
+      .usage-bar {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: ${({ theme }) => theme.bgAlpha};
+
+        span {
+          display: block;
+          height: 100%;
+          min-width: 0;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #22c55e 0%, #f59e0b 70%, #ef4444 100%);
+        }
       }
 
       .card-actions {

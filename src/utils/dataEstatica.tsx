@@ -29,13 +29,13 @@ export const DesplegableUser = [
 
 export const DataDesplegableCuenta = [
   {
-    text: "Categoria Debito",
+    text: "Cuenta débito",
     color: v.colorGastos,
     tipo: "d",
     bgcolor: v.colorbgGastos,
   },
   {
-    text: "Categoria Credito",
+    text: "Tarjeta de crédito",
     color: v.colorIngresos,
     tipo: "c",
     bgcolor: v.colorbgingresos,
